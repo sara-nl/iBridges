@@ -4,8 +4,7 @@
     "http_endpoint": "",
     "env_file": "/home/{USERNAME}/.irods/irods_environment.json",
     "user": "",
-    "zone": "tempZone",
-    "collection_prefix": "/tempZone/home/.../"
+    "zone": "tempZone"
   },
   "type": "DataverseDraft",
   "draft": {

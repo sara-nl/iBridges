@@ -130,18 +130,6 @@ def get_irods_session(config, args):
                             password=password, zone=zone)
 
 
-def get_irods_collection(collection, collection_prefix=None):
-    if collection_prefix is not None:
-        tmp = collection_prefix
-        if collection:
-            if tmp.endswith('/'):
-                tmp += collection
-            else:
-                tmp += "/" + collection
-        collection = tmp
-    return tmp
-
-
 def execute_steps(cmds, batch=False, force=False):
     logger = logging.getLogger('ipublish')
     i = 1
@@ -228,9 +216,7 @@ def main(argv=sys.argv[1:]):
 
         # 2. iRodsPublishCollection
         irodscfg = config.get('irods', {})
-        collection = get_irods_collection(args.collection,
-                                          irodscfg.get('collection_prefix',
-                                                       None))
+        collection = args.collection
         irods_session = get_irods_session(irodscfg, args)
         http_endpoint = irodscfg.get('http_endpoint', '')
         ipc = iRodsPublishCollection(collection,

@@ -24,9 +24,7 @@ class iRodsPublishCollection():
 
     @staticmethod
     def add_arguments(parser):
-        args = [('collection_prefix',
-                 'prefix of the collection to be bridged'),
-                ('env_file',
+        args = [('env_file',
                  'path to irods env. file'),
                 ('host',
                  'irods host'),
@@ -121,14 +119,13 @@ class iRodsPublishCollection():
         # imeta add <obj path> TICKET <ticket>
 
         cmd = ['iticket', 'create', 'read', self.coll.path]
-        self.logger.info('execute %s', cmd.join(' '))
+        self.logger.info('execute %s', ' '.join(cmd))
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         out, err = p.communicate()
         self.logger.error('iticket %s', err)
         self.logger.info('iticket %s', out)
-        out, err = p.communicate()
         if out == '':
             self.logger.error('TICKET ERROR: No ticket created: %s ', err)
             return tickets, False
@@ -151,7 +148,7 @@ class iRodsPublishCollection():
 
         for obj in self.coll.data_objects:
             cmd = ['iticket', 'create', 'read', obj.path]
-            self.logger.info('execute %s', cmd.join(' '))
+            self.logger.info('execute %s', ' '.join(cmd))
             p = subprocess.Popen(cmd,
                                  stderr=subprocess.PIPE,
                                  stdout=subprocess.PIPE)
