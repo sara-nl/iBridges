@@ -47,7 +47,7 @@ class CkanDraft(Draft):
         return self.apiUrl + "/" + self.ckanOrg
 
     @property
-    def doi(self):
+    def publicId(self):
         return self.ckanID
 
     @property

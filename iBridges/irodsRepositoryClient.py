@@ -26,11 +26,11 @@ class iRodsRepositoryClient(object):
         self.ipc.mdUpdate(self.getRepoKey(key), value)
 
     def isPublished(self):
-        return self.ipc.isPublished([self.getRepoKey('DOI')])
+        return self.ipc.isPublished([self.getRepoKey('PUBLIC_ID')])
 
     def checkCollection(self):
         # Check if flat directory and no DOI from repository (unpublished)
-        ret = self.ipc.validate([self.getRepoKey('DOI')])
+        ret = self.ipc.validate([self.getRepoKey('PUBLIC_ID')])
 
         # Check if mandatory metadata is present
         if not set(self.draft.metaKeys).issubset(self.ipc.md.keys()):
@@ -97,12 +97,15 @@ class iRodsRepositoryClient(object):
         '''
         Publishes a draft (checks only on draft.draftUrl).
         Adds a PID from the repository to a collection in iRODS.
-        key:    repoName/DOI: doi
+        key:    repoName/PUBLIC_ID: doi or other unique id
+                repoName/DOI: doi
                 repoName/ID: id
         '''
         assert self.draft.url != ''
         self.draft.publish()
-        self.updateRepoValue('DOI', self.draft.doi)
+        self.updateRepoValue('PUBLIC_ID', self.draft.publicId)
+        if hasattr(self.draft, 'doi'):
+            self.updateRepoValue('DOI', self.draft.doi)
         self.updateRepoValue('URL', self.draft.url)
 
     def createDraft(self):

@@ -185,12 +185,10 @@ def publish_draft(publisher, logger_factory, batch=True, force=False):
             if not batch and not force:
                 raw_input(format_question('Press Enter to publish...'))
             publisher.publishDraft()
-            owners = set()
-            publisher.createReportNoRaise(logger_factory.get_logs(), owners)
+            publisher.createReportNoRaise(logger_factory.get_logs())
             lock.finalize()
     except Exception:
-        owners = set()
-        publisher.createReportNoRaise(logger_factory.get_logs(), owners)
+        publisher.createReportNoRaise(logger_factory.get_logs())
         raise
 
 
