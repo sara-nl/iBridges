@@ -26,6 +26,11 @@ Unless required by applicable law or agreed to in writing, software distributed 
   - Rodsuser 'anonymous' with read rights to /zone/home/public/<repo_name> 
 
 ### python packages
+patched dataverse-client-python via submodule:
+
+    git submodule update --init --recursive
+
+
 (see also requirements.txt)
 - urllib3
 - requests
