@@ -11,20 +11,43 @@ class NoOwnership(Exception):
 
 
 class CollectionLock:
-    def __init__(self, ipc):
+    def __init__(self, ipc, original_acl=None,
+                 do_unlock=False, do_lock=True):
         self.logger = logging.getLogger('ipublish')
+        self.logger.debug('collection lock')
+        self.logger.debug('do_unlock: %s, do_lock %s', do_unlock, do_lock)
         self.ipc = ipc
-        self.original_acl = {}
-        self.do_unlock = False
+        if original_acl is None:
+            self.original_acl = {}
+        else:
+            acls = [iRODSAccess(str(acl.get('access_name')),
+                                str(acl.get('path')),
+                                str(acl.get('user_name')),
+                                str(acl.get('user_zone')))
+                    for acl in original_acl]
+            self.original_acl = {(acl.path, acl.user_name): acl
+                                 for acl in acls}
+        self.do_unlock = do_unlock
+        self.do_lock = do_lock
 
     def __enter__(self):
-        self.lock()
-        self.do_unlock = True
+        if self.do_lock:
+            self.lock()
+            self.do_unlock = True
         return self
 
     def __exit__(self, type, value, traceback):
         if self.do_unlock:
             self.unlock()
+
+    def to_dict(self):
+        return {"do_unlock": self.do_unlock,
+                "original_acl": [
+                    {'access_name': value.access_name,
+                     'path': value.path,
+                     'user_name': value.user_name,
+                     'user_zone': value.user_zone}
+                    for value in self.original_acl.values()]}
 
     def check_ownership(self, user, obj_or_coll):
         if hasattr(obj_or_coll, 'owner_name') and \

@@ -5,16 +5,25 @@ from irods.access import iRODSAccess
 
 class iRodsRepositoryClient(object):
 
-    def __init__(self, ipc, draft, pidClient=''):
+    def __init__(self, ipc, draft, pidClient='', config={}):
         self.logger = logging.getLogger('ipublish')
         self.draft = draft
         self.ipc = ipc
         self.pids = ipc.getMDall('PID')
         self.tickets = ipc.getMDall('TICKET')
         self.pidClient = pidClient
+        self.config = config
         self.logger.info("Publish collection: %s", self.ipc.uri)
         self.logger.info("Draft Type: %s", self.draft.__class__.__name__)
         self.logger.info("Draft Url: %s", self.draft.uri)
+
+    @property
+    def draftClass(self):
+        return self.draft.__class__.__name__
+
+    @property
+    def collection(self):
+        return self.ipc.collection_path
 
     def getRepoKey(self, key):
         return self.draft.repoName + '/' + key

@@ -42,17 +42,31 @@ def parse_arguments(argv=sys.argv[1:]):
                         help="don't remove temporary files")
     parser.add_argument('--batch', '-b',
                         action='store_true',
-                        help="batch mode: don't ask any interactive questions")
+                        help=("batch mode: " +
+                              "don't ask any interactive questions"))
+    parser.add_argument('--nopublish',
+                        action='store_true',
+                        help="dont publish draft, save ticket instead")
+    parser.add_argument('--ticket',
+                        type=str,
+                        help=('save draft information to ticket ' +
+                              'for later continuation or reference'))
+    parser.add_argument('--continue',
+                        action='store_true',
+                        dest='continue_publish',
+                        help=('continue with publication of ' +
+                              'prepared draft ' +
+                              '(filename given by --ticket argument ' +
+                              'in previous phase)'))
     parser.add_argument('--force',
                         action='store_true',
                         help=("force publishing " +
                               "(even on upload / metadata errors)\n" +
                               "if not in batch mode, " +
                               "user is asked interactively "))
+    parser.add_argument('collection', type=str, nargs='?')
     args, unknown = parser.parse_known_args([a for a in argv
                                              if a not in ['-h', '--help']])
-    parser.add_argument('collection', type=str)
-
     irods_group = parser.add_argument_group('irods configuration')
     iRodsPublishCollection.add_arguments(irods_group)
 
@@ -66,8 +80,11 @@ def parse_arguments(argv=sys.argv[1:]):
             sys.exit(8)
         draft_name = str(draft_name)
         draft_class = get_draft_class(draft_name)
-        draft_group = parser.add_argument_group(draft_name + ' configuration')
+        draft_group = parser.add_argument_group(draft_name +
+                                                ' configuration')
         draft_class.add_arguments(draft_group)
+        if args.collection is None and 'collection' not in config:
+            raise ValueError('Missing CLI argument collection')
         return parser.parse_args(argv)
     except Exception:
         parser.print_help()
@@ -162,7 +179,52 @@ def execute_steps(cmds, batch=False, force=False):
             logger.warning('continue with errors')
 
 
-def publish_draft(publisher, logger_factory, batch=True, force=False):
+def write_ticket(ticket, publisher, lock):
+    logger = logging.getLogger('ipublish')
+    logger.info('writing data to ticket %s ' % ticket)
+    obj = {"irods": publisher.config.get('irods', {}),
+           "type": publisher.draftClass,
+           "collection": publisher.collection,
+           "draft": publisher.config.get('draft', {}),
+           "collection_lock": lock.to_dict()}
+    with open(ticket, "w") as fp:
+        fp.write(json.dumps(obj, indent=4))
+
+
+def continue_publish_draft(publisher, logger_factory,
+                           batch=True, force=False):
+    logger = logging.getLogger('ipublish')
+    config = publisher.config
+    do_lock = 'collection_lock' not in config
+    try:
+        with CollectionLock(publisher.ipc,
+                            do_lock=do_lock,
+                            **config.get('collection_lock', {})) as lock:
+            if publisher.isPublished():
+                logger.error('Data already published {%s=%s}',
+                             publisher.getRepoKey('URL'),
+                             publisher.getRepoValue('URL', default='?'))
+                raise ValueError('Publication error')
+            if not batch and not force:
+                try:
+                    raw_input(format_question('Press Enter to publish...'))
+                    publisher.publishDraft()
+                    lock.finalize()
+                except KeyboardInterrupt:
+                    logger.error('KeyboardInterrupt')
+                    # suppress unlock
+                    lock.finalize()
+            else:
+                publisher.publishDraft()
+                publisher.createReportNoRaise(logger_factory.get_logs())
+                lock.finalize()
+    except Exception:
+        publisher.createReportNoRaise(logger_factory.get_logs())
+        raise
+
+
+def publish_draft(publisher, logger_factory,
+                  batch=True, force=False, ticket=None):
     logger = logging.getLogger('ipublish')
     try:
         with CollectionLock(publisher.ipc) as lock:
@@ -182,6 +244,8 @@ def publish_draft(publisher, logger_factory, batch=True, force=False):
                            publisher.uploadToRepo],
                           batch=batch,
                           force=force)
+            if ticket is not None:
+                write_ticket(ticket, publisher, lock)
             if not batch and not force:
                 raw_input(format_question('Press Enter to publish...'))
             publisher.publishDraft()
@@ -204,6 +268,12 @@ def main(argv=sys.argv[1:]):
         draft_class = get_draft_class(draft_name)
         # add cli arguments to config
         config = overlay_config(config, args, draft_class)
+        if args.collection is None:
+            collection = config.get('collection', None)
+            if collection is None:
+                raise ValueError('Missing CLI argument collection')
+        else:
+            collection = args.collection
         logger.debug('config:')
         for line in pprint.pformat(config, 2).split('\n'):
             logger.debug(' ' + line)
@@ -214,7 +284,6 @@ def main(argv=sys.argv[1:]):
 
         # 2. iRodsPublishCollection
         irodscfg = config.get('irods', {})
-        collection = args.collection
         irods_session = get_irods_session(irodscfg, args)
         http_endpoint = irodscfg.get('http_endpoint', '')
         ipc = iRodsPublishCollection(collection,
@@ -222,11 +291,18 @@ def main(argv=sys.argv[1:]):
                                      http_endpoint=http_endpoint)
 
         # 3. publisher
-        publisher = iRodsRepositoryClient(ipc, draft)
+        publisher = iRodsRepositoryClient(ipc, draft, config=config)
 
         # perform publication
-        publish_draft(publisher, logger_factory,
-                      batch=args.batch, force=args.force)
+        if args.continue_publish:
+            continue_publish_draft(publisher, logger_factory,
+                                   batch=args.batch,
+                                   force=args.force)
+        else:
+            publish_draft(publisher, logger_factory,
+                          ticket=args.ticket,
+                          batch=args.batch,
+                          force=args.force)
         logger.info('done')
 
     except Exception as e:

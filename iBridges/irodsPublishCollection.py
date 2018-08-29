@@ -50,7 +50,7 @@ class iRodsPublishCollection():
         try:
             self.coll = self.session.collections.get(collection)
         except CollectionDoesNotExist:
-            self.logger.error('collection %s does not exist', collection)
+            self.logger.error('collection "%s" does not exist', collection)
             raise
         except Exception:
             raise
