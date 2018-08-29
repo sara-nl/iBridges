@@ -14,8 +14,8 @@ class Draft(object):
         raise NotImplementedError("url not implemented")
 
     @property
-    def doi(self):
-        raise NotImplementedError("doi not implemented")
+    def publicId(self):
+        raise NotImplementedError("publicId not implemented")
 
     @property
     def repoName(self):

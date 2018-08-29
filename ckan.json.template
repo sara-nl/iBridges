@@ -4,8 +4,7 @@
     "http_endpoint": "",
     "env_file": "{HOME}/.irods/irods_environment.json",
     "user": "",
-    "zone": "tempZone",
-    "collection_prefix": "/tempZone/home/{USER}"
+    "zone": "tempZone"
   },
   "type": "CkanDraft",
   "draft": {

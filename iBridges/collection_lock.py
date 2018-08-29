@@ -78,9 +78,14 @@ class CollectionLock:
                                         'public',
                                         user.zone))
             for acl in self.ipc.session.permissions.get(ooc):
-                self.logger.debug('backup: %s', vars(acl))
-                self.original_acl[(ooc.path, acl.user_name)] = copy.copy(acl)
-                if acl.user_name != user.name or acl.user_zone != user.zone:
+                # fix: inconsitent name
+                cacl = copy.copy(acl)
+                if cacl.access_name == 'read object':
+                    cacl.access_name = 'read'
+                self.logger.debug('backup: %s', vars(cacl))
+                self.original_acl[(ooc.path, acl.user_name)] = cacl
+                if cacl.user_name != user.name or \
+                   cacl.user_zone != user.zone:
                     new_acls.append(iRODSAccess('read',
                                                 acl.path,
                                                 acl.user_name,

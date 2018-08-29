@@ -34,7 +34,7 @@ class DataverseDraft(Draft):
         return self.apiUrl + "/" + self.alias
 
     @property
-    def doi(self):
+    def publicId(self):
         return self.__dataset.doi
 
     @property
