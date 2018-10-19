@@ -3,7 +3,7 @@ import datetime
 from irods.access import iRODSAccess
 
 
-class iRodsRepositoryClient(object):
+class iRodsRepositoryConnector(object):
 
     def __init__(self, ipc, draft, pidClient='', config={}):
         self.logger = logging.getLogger('ipublish')
