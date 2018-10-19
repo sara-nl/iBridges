@@ -1,6 +1,10 @@
 import sys
 import os
 import irods_repository_connector
+import irods_collection
+import collection_lock
+
+
 sys.path.insert(0,
                 os.path.join(os.path.dirname(os.path.dirname(__file__)),
                              "dataverse-client-python"))
@@ -11,3 +15,4 @@ sys.path.insert(0,
 
 iRodsRepositoryConnector = irods_repository_connector.iRodsRepositoryConnector
 iRodsCollection = irods_collection.iRodsCollection
+CollectionLock = collection_lock.CollectionLock

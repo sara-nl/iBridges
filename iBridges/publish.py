@@ -16,7 +16,7 @@ from irods.session import iRODSSession
 from iBridges.logger import LoggerFactory
 from iBridges.logger import format_error
 from iBridges.logger import format_question
-from iBridges.collection_lock import CollectionLock
+from iBridges import CollectionLock
 from iBridges import iRodsCollection
 from iBridges import iRodsRepositoryConnector
 
