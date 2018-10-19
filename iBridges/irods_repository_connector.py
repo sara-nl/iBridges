@@ -9,8 +9,8 @@ class iRodsRepositoryConnector(object):
         self.logger = logging.getLogger('ipublish')
         self.draft = draft
         self.ipc = ipc
-        self.pids = ipc.getMDall('PID')
-        self.tickets = ipc.getMDall('TICKET')
+        self.pids = ipc.getMetaDataByKey('PID')
+        self.tickets = ipc.getMetaDataByKey('TICKET')
         self.pidClient = pidClient
         self.config = config
         self.logger.info("Publish collection: %s", self.ipc.uri)
@@ -40,19 +40,7 @@ class iRodsRepositoryConnector(object):
     def checkCollection(self):
         # Check if flat directory and no DOI from repository (unpublished)
         ret = self.ipc.validate([self.getRepoKey('PUBLIC_ID')])
-
-        # Check if mandatory metadata is present
-        if not set(self.draft.metaKeys).issubset(self.ipc.md.keys()):
-            self.logger.error('%s PUBLISH ERROR: Keys not defined: ',
-                              self.draft.repoName)
-            self.logger.error(' ' + str(set(self.draft.metaKeys).
-                                        difference(self.ipc.md.keys())))
-            ret = False
-        else:
-            self.logger.info('%s PUBLISH NOTE: all metadata defined:',
-                             self.draft.repoName)
-            self.logger.info(' ' + str(self.draft.metaKeys))
-
+        ret = ret & self.draft.validateMetaData(self.ipc)
         return ret
 
     def assignSeriesInformation(self):

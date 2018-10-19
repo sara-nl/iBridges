@@ -22,12 +22,11 @@ class Draft(object):
         raise NotImplementedError("repoName not implemented")
 
     @property
-    def metaKeys(self):
-        raise NotImplementedError("metaKeys not implemented")
-
-    @property
     def hasData(self):
         raise NotImplementedError("hasData not implemented")
+
+    def validateMetaData(self, ipc):
+        raise NotImplementedError("validateMetaData not implemented")
 
     def create(self, title):
         raise NotImplementedError("create not implemented")

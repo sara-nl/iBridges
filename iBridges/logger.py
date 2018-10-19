@@ -52,7 +52,10 @@ class LoggerFactory(object):
         string_handler.setLevel(logging.WARNING)
         self.logger.addHandler(stream_handler)
         self.logger.addHandler(string_handler)
-        self.logger.setLevel(logging.DEBUG)
+        if verbose:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.WARNING)
 
     def get_logger(self):
         return self.logger

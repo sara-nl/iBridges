@@ -55,7 +55,7 @@ class iRodsCollection():
         except Exception:
             raise
 
-        self.md = self.mdGet()
+        self.md = self.getMetaData()
         self.http = http_endpoint  # http or davrods endpoint
 
     @property
@@ -251,12 +251,12 @@ class iRodsCollection():
                 if item.name == key:
                     self.coll.metadata.remove(item)
         self.coll.metadata.add(key, value)
-        self.md = self.mdGet()
+        self.md = self.getMetaData()
         self.logger.info('METADATA ADDED {%s=%s}', key, value)
         # todo check if return value is needed
         # return ['METADATA ADDED; '+key+' '+value]
 
-    def mdGet(self):
+    def getMetaData(self):
         '''
         Reformatting od all metadata of the collection
         into a python dictionary.
@@ -267,7 +267,7 @@ class iRodsCollection():
 
         return metadata
 
-    def getMDall(self, key):
+    def getMetaDataByKey(self, key):
         '''
         Fetches all metadata with with a certain key
         from all members in a collection.

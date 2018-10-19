@@ -55,12 +55,22 @@ class CkanDraft(Draft):
         return 'CKAN'
 
     @property
-    def metaKeys(self):
-        return ['TITLE', 'ABSTRACT', 'CREATOR']
-
-    @property
     def hasData(self):
         return False
+
+    def validateMetaData(self, ipc):
+        required = ['TITLE', 'ABSTRACT', 'CREATOR']
+        if not set(required).issubset(ipc.md.keys()):
+            self.logger.error('%s PUBLISH ERROR: Keys not defined: ',
+                              self.repoName)
+            self.logger.error(' ' + str(set(required).
+                                        difference(ipc.md.keys())))
+            return False
+        else:
+            self.logger.info('%s PUBLISH NOTE: all metadata defined:',
+                             self.repoName)
+            self.logger.info(' ' + str(required))
+            return True
 
     def create(self, title):
         '''
@@ -109,7 +119,7 @@ class CkanDraft(Draft):
         NOTE: If the draft already contains files,
         the update of metadata will fail.
         Parameters:
-        metadata = ipc.mdGet()
+        metadata = ipc.getMetaData()
         collPath = iRODS path or webdav access to collection or data object
         '''
         curMeta = self.__dataset
