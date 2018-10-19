@@ -17,7 +17,7 @@ from iBridges.logger import LoggerFactory
 from iBridges.logger import format_error
 from iBridges.logger import format_question
 from iBridges.collection_lock import CollectionLock
-from irodsPublishCollection import iRodsPublishCollection
+from iBridges import iRodsCollection
 from iBridges import iRodsRepositoryConnector
 
 
@@ -68,7 +68,7 @@ def parse_arguments(argv=sys.argv[1:]):
     args, unknown = parser.parse_known_args([a for a in argv
                                              if a not in ['-h', '--help']])
     irods_group = parser.add_argument_group('irods configuration')
-    iRodsPublishCollection.add_arguments(irods_group)
+    iRodsCollection.add_arguments(irods_group)
 
     try:
         config = read_config(args)
@@ -115,7 +115,7 @@ def get_draft_class(draft):
 
 
 def overlay_config(config, args, draft_class):
-    irods_prefix = iRodsPublishCollection.argument_prefix + "_"
+    irods_prefix = iRodsCollection.argument_prefix + "_"
     draft_prefix = draft_class.argument_prefix + "_"
     for k, v in vars(args).items():
         if k.startswith(irods_prefix) and v is not None:
@@ -282,13 +282,13 @@ def main(argv=sys.argv[1:]):
         # 1. draft
         draft = draft_class(**config.get('draft', {}))
 
-        # 2. iRodsPublishCollection
+        # 2. iRodsCollection
         irodscfg = config.get('irods', {})
         irods_session = get_irods_session(irodscfg, args)
         http_endpoint = irodscfg.get('http_endpoint', '')
-        ipc = iRodsPublishCollection(collection,
-                                     session=irods_session,
-                                     http_endpoint=http_endpoint)
+        ipc = iRodsCollection(collection,
+                              session=irods_session,
+                              http_endpoint=http_endpoint)
 
         # 3. connector
         connector = iRodsRepositoryConnector(ipc, draft, config=config)

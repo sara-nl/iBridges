@@ -10,3 +10,4 @@ sys.path.insert(0,
                              "drafts"))
 
 iRodsRepositoryConnector = irods_repository_connector.iRodsRepositoryConnector
+iRodsCollection = irods_collection.iRodsCollection

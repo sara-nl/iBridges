@@ -19,7 +19,7 @@ from tempdir import Tempdir
 from tempdir import buffered_read
 
 
-class iRodsPublishCollection():
+class iRodsCollection():
     argument_prefix = "irods"
 
     @staticmethod
@@ -36,7 +36,7 @@ class iRodsPublishCollection():
                  'irods zone')]
         for arg, h in args:
             parser.add_argument('--%s_%s' %
-                                (iRodsPublishCollection.argument_prefix, arg),
+                                (iRodsCollection.argument_prefix, arg),
                                 type=str,
                                 help=h)
 
