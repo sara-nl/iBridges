@@ -1,0 +1,14 @@
+{
+  "subcollections": [],
+  "data_objects": [
+    {
+      "name": "object1.txt"
+    },
+    {
+      "name": "object2.txt"
+    },
+    {
+      "name": "object3.txt"
+    }
+  ]
+}
