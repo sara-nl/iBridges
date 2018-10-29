@@ -172,6 +172,8 @@ class iRodsCollection():
         pids = {}
         # TODO: mint real PIDs
         # @todo: check if assignPID is required
+        # @todo: check edge case: name of collection equals name of object in collection
+        #        -> clashed key
         pid = str(uuid.uuid1())
         self.mdUpdate("PID", pid)
         pids[self.coll.name] = pid
@@ -181,7 +183,6 @@ class iRodsCollection():
                 pid = str(uuid.uuid1())
                 obj.metadata.add("PID", pid)
                 pids[obj.name] = pid
-
         return pids
 
     def close(self, owners=set()):

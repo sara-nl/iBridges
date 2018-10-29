@@ -5,4 +5,6 @@ bleach
 termcolor
 python-irodsclient
 uuid
+mock
+pytest
 
