@@ -59,10 +59,15 @@ class DataverseDraft(Draft):
                                         difference(ipc.md.keys())))
             return False
         else:
-            self.logger.info('%s PUBLISH NOTE: all metadata defined:',
-                             self.repoName)
-            self.logger.info(' ' + str(required))
-            return True
+            if len(set(ipc.md.keys())
+                   .intersection(set([self.repoName + '/DOI']))) > 0:
+                self.logger.error('PUBLISH ERROR: Data is already published.')
+                return False
+            else:
+                self.logger.info('%s PUBLISH NOTE: all metadata defined:',
+                                 self.repoName)
+                self.logger.info(' ' + str(required))
+                return True
 
     def create(self, title):
         '''
