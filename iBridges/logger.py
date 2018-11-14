@@ -42,6 +42,7 @@ class LoggerFactory(object):
                   '%(pathname)s:%(lineno)d %(message)s'
         else:
             fmt = '%(asctime)s %(levelname)-8s %(message)s'
+        logging.captureWarnings(True)
         self.logger = logging.getLogger('ipublish')
         self.log_stream = StringIO()
         stream_handler = logging.StreamHandler()

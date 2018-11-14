@@ -6,10 +6,12 @@
     "user": "",
     "zone": "tempZone"
   },
+  "drafts_search_paths": ["drafts/"],
   "type": "CkanDraft",
   "draft": {
     "api_token": "{TOKEN}",
     "api_url": "http://{HOST}:8080/api/3",
-    "org": "{ORG}"
+    "org": "{ORG}",
+    "insecure": false,
   }
 }

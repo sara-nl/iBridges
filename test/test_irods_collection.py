@@ -82,8 +82,6 @@ class TestIRodsCollection(unittest.TestCase):
                           'owner3#mock': 'read',
                           'public#mock': 'read'})
         coll.open(owners)
-        import pprint
-        pprint.pprint(session.permissions._data)
         self.assertEqual(session.permissions._data['collection_with_data'],
                          {'auto#mock': 'write',
                           'me#mock': 'write',

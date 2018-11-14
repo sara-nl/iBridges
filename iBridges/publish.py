@@ -1,14 +1,18 @@
 #!/usr/bin/env python
+"""
+@licence: Apache 2.0
+@Copyright (c) 2018, Christine Staiger (SURFsara)
+@author: Christine Staiger
+@author: Stefan Wolfsheimer
+"""
 import sys
 import os
 import argparse
 import json
-import importlib
 import getpass
 import pprint
 import logging
 import traceback
-
 # iRODS
 from irods.session import iRODSSession
 
@@ -19,6 +23,7 @@ from iBridges.logger import format_question
 from iBridges import CollectionLock
 from iBridges import iRodsCollection
 from iBridges import iRodsRepositoryConnector
+from iBridges import get_draft_class
 
 
 def parse_arguments(argv=sys.argv[1:]):
@@ -31,6 +36,10 @@ def parse_arguments(argv=sys.argv[1:]):
     parser.add_argument('--type', '-t',
                         type=str,
                         help='Draft type (e.g. DataverseDraft)')
+    parser.add_argument('--drafts_search_paths',
+                        type=list,
+                        nargs='*',
+                        help='Draft search paths (default drafts)')
     parser.add_argument('--verbose', '-v',
                         action='store_true',
                         help="show debug level logs")
@@ -67,6 +76,9 @@ def parse_arguments(argv=sys.argv[1:]):
     parser.add_argument('collection', type=str, nargs='?')
     args, unknown = parser.parse_known_args([a for a in argv
                                              if a not in ['-h', '--help']])
+    # if
+    # print args.drafts_search_paths
+    # sys.exit(8)
     irods_group = parser.add_argument_group('irods configuration')
     iRodsCollection.add_arguments(irods_group)
 
@@ -79,7 +91,8 @@ def parse_arguments(argv=sys.argv[1:]):
             parser.print_help()
             sys.exit(8)
         draft_name = str(draft_name)
-        draft_class = get_draft_class(draft_name)
+        draft_class = get_draft_class(draft_name,
+                                      config.get('drafts_search_paths', []))
         draft_group = parser.add_argument_group(draft_name +
                                                 ' configuration')
         draft_class.add_arguments(draft_group)
@@ -98,20 +111,12 @@ def read_config(args):
             config = json.load(f)
     if args.type is not None:
         config['type'] = args.type
+    if 'drafts_search_paths' not in config:
+        config['drafts_search_paths'] = ['drafts']
+    if args.drafts_search_paths is not None:
+        config['drafts_search_paths'] = (args.drafts_search_paths +
+                                         config['drafts_search_paths'])
     return config
-
-
-def module_name_of_draft(s):
-    if len(s) == 0:
-        return s
-    else:
-        return s[0].lower() + s[1:]
-
-
-def get_draft_class(draft):
-    draft_module = module_name_of_draft(draft)
-    mod = importlib.import_module(draft_module)
-    return getattr(mod, draft)
 
 
 def overlay_config(config, args, draft_class):
@@ -265,7 +270,8 @@ def main(argv=sys.argv[1:]):
     try:
         config = read_config(args)
         draft_name = str(config.get('type'))
-        draft_class = get_draft_class(draft_name)
+        draft_class = get_draft_class(draft_name,
+                                      config.get('drafts_search_paths', []))
         # add cli arguments to config
         config = overlay_config(config, args, draft_class)
         if args.collection is None:
