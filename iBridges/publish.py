@@ -112,7 +112,7 @@ def read_config(args):
     if args.type is not None:
         config['type'] = args.type
     if 'drafts_search_paths' not in config:
-        config['drafts_search_paths'] = ['drafts']
+        config['drafts_search_paths'] = ['{iBridges}/drafts']
     if args.drafts_search_paths is not None:
         config['drafts_search_paths'] = (args.drafts_search_paths +
                                          config['drafts_search_paths'])
