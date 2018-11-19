@@ -246,7 +246,8 @@ def publish_draft(connector, logger_factory,
             execute_steps([connector.patchDraft,
                            connector.patchDraftTickets,
                            connector.patchDraftPIDs,
-                           connector.uploadToRepo],
+                           connector.uploadToRepo,
+                           connector.patchObjects],
                           batch=batch,
                           force=force)
             if ticket is not None:

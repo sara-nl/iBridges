@@ -25,6 +25,10 @@ class Draft(object):
     def hasData(self):
         raise NotImplementedError("hasData not implemented")
 
+    @property
+    def hasObjectMetaData(self):
+        return False
+
     def validateMetaData(self, ipc):
         raise NotImplementedError("validateMetaData not implemented")
 
@@ -33,6 +37,9 @@ class Draft(object):
 
     def patch(self, metadata, collPath='irods'):
         raise NotImplementedError("patch not implemented")
+
+    def patchMetaData(self):
+        raise NotImplementedError("patchMetaData not implemented")
 
     def patchTickets(self, tickets):
         raise NotImplementedError("patchTickets not implemented")

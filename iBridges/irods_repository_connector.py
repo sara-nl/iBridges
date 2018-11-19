@@ -57,7 +57,7 @@ class iRodsRepositoryConnector(object):
     def assignTicket(self):
         # Create tickets for anonymous download of
         # data from iRODS if not present
-        if not self.tickets:
+        if not self.tickets and self.draft.hasData:
             self.tickets, succ = self.ipc.assignTicket()
             if not succ:
                 self.logger.error('Assigning tickets failed')
@@ -89,6 +89,14 @@ class iRodsRepositoryConnector(object):
         else:
             self.logger.info('draft %s does not support data upload',
                              self.draft.__class__.__name__)
+
+    def patchObjects(self):
+        objects = {}
+        if self.draft.hasObjectMetaData:
+            for obj in self.ipc.getObjects():
+                for meta in obj.metadata.items():
+                    objects[obj.name] = obj.metadata.items()
+            self.draft.patchMetaData(objects)
 
     def publishDraft(self):
         '''

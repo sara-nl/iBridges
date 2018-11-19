@@ -282,8 +282,11 @@ class iRodsCollection():
         for obj in self.coll.data_objects:
             if key in obj.metadata.keys():
                 metadata[obj.path] = obj.metadata.get_all(key)[0].value
-
         return metadata
+
+    def getObjects(self):
+        for obj in self.coll.data_objects:
+            yield obj
 
     def downloadCollection(self, remove=True):
         with Tempdir(prefix="ipublish_", remove=remove) as td:

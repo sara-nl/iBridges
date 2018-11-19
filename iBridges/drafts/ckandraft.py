@@ -60,6 +60,10 @@ class CkanDraft(Draft):
     def hasData(self):
         return False
 
+    @property
+    def dataset(self):
+        return self.__dataset
+
     def validateMetaData(self, ipc):
         required = ['TITLE', 'ABSTRACT', 'CREATOR']
         if not set(required).issubset(ipc.md.keys()):
@@ -194,6 +198,7 @@ class CkanDraft(Draft):
                                 headers={'Authorization': self.apiToken},
                                 verify=not self.insecure)
             self.logger.info('CKAN PUBLISH INFO: Draft patched')
+            return res
         except HTTPError as e:
             # if name already exists or is not given throws 409
             if res.status_code == 409:
