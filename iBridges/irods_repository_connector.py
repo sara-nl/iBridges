@@ -96,7 +96,7 @@ class iRodsRepositoryConnector(object):
             for obj in self.ipc.getObjects():
                 for meta in obj.metadata.items():
                     objects[obj.name] = obj.metadata.items()
-            self.draft.patchMetaData(objects)
+            self.draft.patchMetaData(objects, self.ipc.coll)
 
     def publishDraft(self):
         '''

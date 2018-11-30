@@ -38,7 +38,7 @@ class Draft(object):
     def patch(self, metadata, collPath='irods'):
         raise NotImplementedError("patch not implemented")
 
-    def patchMetaData(self):
+    def patchMetaData(self, objects, coll):
         raise NotImplementedError("patchMetaData not implemented")
 
     def patchTickets(self, tickets):
