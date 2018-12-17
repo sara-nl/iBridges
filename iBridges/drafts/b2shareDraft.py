@@ -14,7 +14,7 @@ import requests
 #from urllib2 import Request
 #from urllib2 import quote
 #from urllib2 import HTTPError
-#from iBridges.draft import Draft
+from iBridges.draft import Draft
 
 
 class B2shareDraft():
@@ -27,11 +27,11 @@ class B2shareDraft():
             parser.add_argument('--b2share_' + i,
                                 type=str)
 
-    def __init__(self, api_token, api_url, org, draftUrl=None):
+    def __init__(self, api_token, api_url, community, draftUrl=None):
         self.logger = logging.getLogger('ipublish')
         self.apiToken = api_token
         self.apiUrl = api_url
-        self.b2shareOrg = org
+        self.b2shareOrg = community
         self.draftUrl   = draftUrl
         self.__dataset = None
         self.B2shareID = None
@@ -57,7 +57,7 @@ class B2shareDraft():
         return True
 
     def validateMetaData(self, ipc):
-        required = ['TITLE', 'ABSTRACT', 'CREATOR', 'SERIESINFORMATION', 'OTHER']
+        required = ['TITLE', 'ABSTRACT', 'CREATOR', 'SERIESINFORMATION']
         if not set(required).issubset(ipc.md.keys()):
             self.logger.error('%s PUBLISH ERROR: Keys not defined: ',
                               self.repoName)
@@ -116,56 +116,45 @@ class B2shareDraft():
             metadata['CREATOR'] + '"}]}]'
         response = requests.patch(url=self.draftUrl, headers=headers, data=patch)
         if response.status_code not in range(200, 300):
-            print('B2SHARE PUBLISH ERROR: Draft not patched with creators. ' + \
-            str(response.status_code))
+             self.logger.error('%s PUBLISH ERROR: Draft not patched with creators. ' + \
+                 str(response.status_code), self.repoName)
         else:
-            print "added creator"
+            self.logger.info('added creator')
 
         patch = '[{"op":"add","path":"/descriptions","value":[{"description":"'+ metadata['ABSTRACT'] + \
-            '", "description_type":"Abstract"},{"description":"'+ metadata['OTHER'] + \
+            '", "description_type":"Abstract"},{"description":"'+ metadata['ABSTRACT'] + \
             '", "description_type":"Other"},{"description":"'+metadata['SERIESINFORMATION'] + \
             '", "description_type":"SeriesInformation"}]}]'
-
         response = requests.patch(url=self.draftUrl, headers=headers, data=patch)
 
         if response.status_code not in range(200, 300) and response.status_code!=500:
-            print('B2SHARE PUBLISH ERROR: Draft not patched with description. ' + \
-            str(response.status_code))
+            self.logger.error('%s PUBLISH ERROR: Draft not patched with description. ' + \
+            str(response.status_code), self.repoName)
         else:
-            print "added abstract, other, seriesinformation"
+            self.logger.info('added abstract, other, seriesinformation')
 
 
     def patchTickets(self, tickets):
-        print "Not implemented"
+        self.logger.info('Tickets: Not implemented')
 
-    def patchPIDs(self, pids):
-        prefix = 'hdl.handle.net/'
-        self.patchRefs({'key': 'File Handles',
-                        'value': str([os.path.basename(ref) +
-                                      '> ' + prefix + value
-                                      for ref, value in pids.items()])})
-
-    def patchRefs(self, obj):
+    def patchPIDs(self, obj, idType = 'http://hdl.handle.net/'):
         '''
         Patches a draft with tickets and pids for data objects
         as otherReferences.
-        Expects a dictionary irods obj path --> ticket
+        Expects a dictionary irods obj path --> id
         '''
-        errorMsg = []
         headers = {"Content-Type":"application/json-patch+json"}
         tmp = []
         for pid in obj:
             tmp.append('{"alternate_identifier": "'+obj[pid]+\
-                '", "alternate_identifier_type": "EPIC;'+\
+                '", "alternate_identifier_type": "idType;'+\
                 pid+'"}')
         patch = '[{"op":"add","path":"/alternate_identifiers","value":[' + ','.join(tmp)+']}]'
         request = requests.patch(url=self.draftUrl, headers=headers, data=patch)
         if request.status_code not in range(200, 300):
-            errorMsg.append('B2SHARE PUBLISH ERROR: Draft not patched with pids. ' + str(request.status_code))
+            self.logger.error('%s PUBLISH ERROR: Draft not patched with pids. ' + str(request.status_code), self.repoName)
 
-        return errorMsg
-
-    def uploadData(self, folder):
+    def uploadFile(self, folder):
         '''
         Uploads local files from a folder to the draft.
         '''
@@ -179,8 +168,8 @@ class B2shareDraft():
             response = requests.put(url=upload_files_url,
                 headers = headers, data = file)
             if response.status_code not in range(200, 300):
-                print('B2SHARE PUBLISH ERROR: File not uploaded ' +
-                    folder+"/"+f +', ' + str(request.status_code))
+                self.logger.error('%s PUBLISH ERROR: File not uploaded ' +
+                    folder+"/"+f +', ' + str(request.status_code), self.repoName)
 
     def publish(self):
 

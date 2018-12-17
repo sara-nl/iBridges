@@ -46,13 +46,13 @@ class iRodsRepositoryConnector(object):
     def assignSeriesInformation(self):
         self.ipc.assignSeriesInformation()
 
-    # def assignPid(self):
+    def assignPid(self):
     # @todo: check if we need pid creation
     # Create PIDs, if not present
-    # if not self.pids:
-    #    self.pids = self.ipc.assignPID(self.pidClient)
-    #    self.logger.info('PIDs for collection: ', str(self.pids))
-    # pass
+        if not self.pids:
+            self.pids = self.ipc.assignPID(self.pidClient)
+            self.logger.info('PIDs for collection: ', str(self.pids))
+        pass
 
     def assignTicket(self):
         # Create tickets for anonymous download of
