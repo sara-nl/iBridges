@@ -1,0 +1,2 @@
+docker exec airflow supervisorctl restart airflow_scheduler
+docker exec airflow supervisorctl restart airflow_webserver

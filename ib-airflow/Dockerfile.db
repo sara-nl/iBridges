@@ -1,0 +1,41 @@
+FROM ubuntu:16.04
+RUN apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+RUN apt-get update && apt-get install -y python-software-properties software-properties-common postgresql-9.6 postgresql-client-9.6 postgresql-contrib-9.6
+
+RUN mkdir /app
+RUN echo '#!/bin/bash' > /app/run_postgres.sh && \
+    echo 'service postgresql start' >> /app/run_postgres.sh && \
+    echo '/usr/lib/postgresql/9.6/bin/pg_isready' >> /app/run_postgres.sh && \
+    echo 'tail -f /var/log/postgresql/postgresql-9.6-main.log' >> /app/run_postgres.sh && \
+    chmod a+x /app/run_postgres.sh
+
+USER postgres
+
+RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.6/main/pg_hba.conf &&\
+    echo "listen_addresses='*'" >> /etc/postgresql/9.6/main/postgresql.conf
+
+RUN /etc/init.d/postgresql start &&\
+    psql --command "CREATE USER irods WITH PASSWORD 'irods';" &&\
+    psql --command "CREATE USER airflow WITH PASSWORD 'airflow';" &&\
+    createdb --owner irods ICAT &&\
+    createdb --owner airflow airflow &&\
+    psql --command 'GRANT ALL PRIVILEGES ON DATABASE "ICAT" TO irods;' &&\
+    psql --command 'GRANT ALL PRIVILEGES ON DATABASE "airflow" TO airflow;' &&\
+    /etc/init.d/postgresql stop
+
+
+# And add ``listen_addresses`` to ``/etc/postgresql/9.3/main/postgresql.conf``
+# RUN echo "listen_addresses='*'" >> /etc/postgresql/9.3/main/postgresql.conf
+
+# Expose the PostgreSQL port
+# EXPOSE 5432
+
+# USER root
+
+
+# VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
+
+CMD ["/app/run_postgres.sh"]
+

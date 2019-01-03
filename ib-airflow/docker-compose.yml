@@ -1,0 +1,65 @@
+version: '2'
+
+services:
+  db:
+    container_name: db
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    hostname: db
+
+  mongodb:
+    container_name: mongodb
+    build:
+      context: .
+      dockerfile: Dockerfile.mongodb
+    ports:
+      - 27017:27017
+      - 28017:28017
+
+  mongoexpress:
+    container_name: mongoexpress
+    hostname: mongoexpress.airflow
+    build:
+      context: .
+      dockerfile: Dockerfile.mongoexpress
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    links:
+      - "mongodb:mongo"
+
+  icat:
+    container_name: icat
+    build:
+      context: .
+      dockerfile: Dockerfile.irods
+    ports:
+      - "127.0.0.1:1247:1247"
+    depends_on:
+      - db
+    links:
+      - "db:irodsdb"
+    hostname: icat
+
+  airflow:
+    container_name: airflow
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    hostname: scheduler.airflow
+    depends_on:
+      - db
+      - mongodb
+    links:
+      - "db:airflowdb"
+      - "mongodb:mongodb"
+      - "icat:icat"
+    volumes:
+      - "${VOLUME}:/home/iBridges"
+    ports:
+      - "8080:8080"
+
+
+    
