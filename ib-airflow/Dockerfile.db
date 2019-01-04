@@ -19,10 +19,13 @@ RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.6/main/pg_hba.co
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER irods WITH PASSWORD 'irods';" &&\
     psql --command "CREATE USER airflow WITH PASSWORD 'airflow';" &&\
+    psql --command "CREATE USER ckan WITH PASSWORD 'ckan';" &&\
     createdb --owner irods ICAT &&\
     createdb --owner airflow airflow &&\
+    createdb --owner ckan ckan &&\
     psql --command 'GRANT ALL PRIVILEGES ON DATABASE "ICAT" TO irods;' &&\
     psql --command 'GRANT ALL PRIVILEGES ON DATABASE "airflow" TO airflow;' &&\
+    psql --command 'GRANT ALL PRIVILEGES ON DATABASE "ckan" TO ckan;' &&\
     /etc/init.d/postgresql stop
 
 

@@ -48,7 +48,7 @@ RUN mkdir -p /var/run/supervisor && chown airflow:airflow /var/run/supervisor
 USER airflow
 WORKDIR /usr/lib/airflow
 RUN mkdir -p /usr/lib/airflow/airflow
-RUN mkdir -p /usr/lib/airflow/supervisor
+RUN mkdir -p /usr/lib/airflow/supervisor && mkdir -p /usr/lib/airflow/.irods
   
 ENV AIRFLOW_HOME /usr/lib/airflow/airflow
 ENV PYTHONPATH /home/iBridges/
@@ -56,7 +56,7 @@ ENV PYTHONPATH /home/iBridges/
 ADD airflow/supervisord.conf /etc/supervisor/supervisord.conf
 ADD airflow/airflow.cfg /usr/lib/airflow/airflow/airflow.cfg
 ADD airflow/unittests.cfg /usr/lib/airflow/airflow/unittests.cfg
-ADD airflow/irods_environment.json /usr/lib/airflow/irods_environment.json
+ADD airflow/irods_environment.json /usr/lib/airflow/.irods/irods_environment.json
 ADD airflow/init_irods.py /usr/lib/airflow/init_irods.py
 
 RUN /usr/lib/airflow/init_irods.py

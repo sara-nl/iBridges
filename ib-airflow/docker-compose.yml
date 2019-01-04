@@ -61,5 +61,29 @@ services:
     ports:
       - "8080:8080"
 
+  ckan:
+    container_name: ckan
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+      - solr
+      - redis
+    links:
+      - "db:db"
+      - "solr:solr"
+      - "redis:redis"
 
-    
+  solr:
+    container_name: solr
+    build:
+      context: .
+      dockerfile: Dockerfile.solr
+
+  redis:
+    container_name: redis
+    image: redis:latest
+

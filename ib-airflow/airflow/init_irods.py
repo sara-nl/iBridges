@@ -2,7 +2,7 @@
 import irods.password_obfuscation as password_obfuscation
 
 
-with open("/usr/lib/airflow/irodsA", "wb") as fp:
+with open("/usr/lib/airflow/.irods/.irodsA", "wb") as fp:
     fp.write(password_obfuscation.encode("test"))
 
 # Test the connection
