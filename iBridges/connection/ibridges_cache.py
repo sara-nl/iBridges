@@ -14,10 +14,12 @@ class iBridgesCache(iBridgesConnection):
         return workdir
 
     def write(self, key, document):
+        key = key.replace('/', '#')
         with self.open(key, "wb") as fp:
             json.dump(document, fp, indent=4)
 
     def read(self, key):
+        key = key.replace('/', '#')
         with self.open(key, "r") as fp:
             return json.load(fp)
 

@@ -7,4 +7,5 @@ python-irodsclient
 uuid
 mock
 pytest
+pymongo
 

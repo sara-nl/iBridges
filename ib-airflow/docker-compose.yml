@@ -43,24 +43,6 @@ services:
       - "db:irodsdb"
     hostname: icat
 
-  airflow:
-    container_name: airflow
-    build:
-      context: .
-      dockerfile: Dockerfile.airflow
-    hostname: scheduler.airflow
-    depends_on:
-      - db
-      - mongodb
-    links:
-      - "db:airflowdb"
-      - "mongodb:mongodb"
-      - "icat:icat"
-    volumes:
-      - "${VOLUME}:/home/iBridges"
-    ports:
-      - "8080:8080"
-
   ckan:
     container_name: ckan
     build:
@@ -76,6 +58,26 @@ services:
       - "db:db"
       - "solr:solr"
       - "redis:redis"
+
+  airflow:
+    container_name: airflow
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    hostname: scheduler.airflow
+    depends_on:
+      - db
+      - mongodb
+      - ckan
+    links:
+      - "db:airflowdb"
+      - "mongodb:mongodb"
+      - "icat:icat"
+      - "ckan:ckan"
+    volumes:
+      - "${VOLUME}:/home/iBridges"
+    ports:
+      - "8080:8080"
 
   solr:
     container_name: solr

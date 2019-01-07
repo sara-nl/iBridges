@@ -1,3 +1,6 @@
+import logging
+
+
 class iBridgesConnection(object):
     ARGUMENTS = []
 
@@ -17,6 +20,7 @@ class iBridgesConnection(object):
                 kwargs[arg] = getattr(args, arg)
 
     def __init__(self, **kwargs):
+        self.logger = logging.getLogger('ipublish')
         self.config = kwargs
 
     def get_config(self, kwargs):
