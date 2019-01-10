@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+# set -eo pipefail
 
 # if command does not start with mongo-express, run the command instead of the entrypoint
 if [ "${1}" != "mongo-express" ]; then
@@ -23,5 +23,9 @@ function wait_tcp_port {
 echo Waiting for ${ME_CONFIG_MONGODB_SERVER}:${ME_CONFIG_MONGODB_PORT:-27017}...
 wait_tcp_port "${ME_CONFIG_MONGODB_SERVER}" "${ME_CONFIG_MONGODB_PORT:-27017}"
 sleep 10
-# run mongo-express
-exec node app
+
+while true
+do
+    exec node app
+    sleep 10
+done

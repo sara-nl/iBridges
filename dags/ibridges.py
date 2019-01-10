@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+# flake8: noqa
 import os
 import logging
 from iBridges.dag import iBridgesDag
 from iBridges import Context
 import iBridges.task as task
+import plugin_examples
 
 # airflow will refresh this dag only if this module is imported
 from airflow.models import DAG  # noqa: F401
@@ -23,6 +25,14 @@ irods_check_flatness, \
     irods_check_flatness_ok, \
     irods_check_flatness_error = dag.branch_task(task.irods_check_flatness)
 
+irods_validate_meta_data, \
+    irods_validate_meta_data_ok, \
+    irods_validate_meta_data_error = dag.branch_task(plugin_examples.irods_validate_meta_data)
+
+irods_transform_meta_data, \
+    irods_transform_meta_data_ok, \
+    irods_transform_meta_data_error = dag.branch_task(plugin_examples.irods_transform_meta_data)
+
 irods_unlock_collection = dag.task(task.irods_unlock_collection)
 
 final_success = dag.final_task(True)
@@ -32,8 +42,17 @@ init_task >> mongo_test_connection >> irods_lock_collection
 init_task >> irods_test_connection >> irods_lock_collection
 init_task >> ckan_test_connection >> irods_lock_collection
 irods_lock_collection >> irods_check_flatness
-irods_check_flatness_error >> irods_unlock_collection >> final_failed
-irods_check_flatness_ok >> final_success
+
+irods_check_flatness_error >> irods_unlock_collection
+irods_check_flatness_ok >> irods_validate_meta_data
+
+irods_validate_meta_data_error >> irods_unlock_collection
+irods_validate_meta_data_ok >> irods_transform_meta_data
+
+irods_transform_meta_data_ok >> final_success
+irods_transform_meta_data_error >> irods_unlock_collection
+
+irods_unlock_collection >> final_failed
 
 
 if __name__ == "__main__":

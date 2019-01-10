@@ -1,30 +1,13 @@
-import json
 import logging
-from os.path import expanduser
 from irods_collection import iRodsCollection
+from irods_task_utils import iRodsCollectionNotFlat
+from irods_task_utils import get_irods_zone
+
 
 __all__ = ['irods_test_connection',
            'irods_lock_collection',
            'irods_unlock_collection',
            'irods_check_flatness']
-
-
-class iRodsCollectionNotFlat(Exception):
-    def __init__(self, coll):
-        msg = 'Collection {0} has subcollections'.format(coll)
-        super(iRodsCollectionNotFlat, self).__init__(msg)
-
-
-def get_irods_zone(cfg):
-    if 'irods_zone_name' in cfg and 'irods_host' in cfg:
-        return '{0}#{1}'.format(cfg.get('irods_host'),
-                                cfg.get('irods_zone_name'))
-    else:
-        auth_file = cfg.get('irods_env_file')
-        with open(expanduser(auth_file)) as fp:
-            cfg = json.load(fp)
-            return '{0}#{1}'.format(cfg.get('irods_host'),
-                                    cfg.get('irods_zone_name'))
 
 
 def irods_test_connection(ibcontext, **kwargs):

@@ -84,6 +84,7 @@ class iRodsCollection(object):
             lookup[p] = len(self._data)
             self._data.append({'type': 'collection',
                                'path': collection.path,
+                               'meta_data': self._get_meta_data(collection),
                                'objects': self._get_object_acls(objects, p),
                                'subcollections': [s.path
                                                   for s in subcollections],
@@ -96,9 +97,14 @@ class iRodsCollection(object):
         else:
             return None
 
+    def _get_meta_data(self, collobj):
+        return {item.name: item.value
+                for item in collobj.metadata.items()}
+
     def _get_object_acls(self, objects, parent):
         return [{'type': 'object',
                  'path': obj.path,
+                 'meta_data': self._get_meta_data(obj),
                  'parent': parent,
                  'acls': {acl.user_name: vars(acl)
                           for acl in self.session.permissions.get(obj)}}

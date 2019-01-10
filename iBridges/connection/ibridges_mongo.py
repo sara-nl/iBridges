@@ -31,6 +31,10 @@ class iBridgesMongo(iBridgesConnection):
         workdir = self.mkdir()
         return open(os.path.join(workdir, '{0}.json'.format(key)), mode)
 
+    def update(self, key, sub_doc):
+        obj = {'$set': sub_doc}
+        self.collection.update_one(key, obj)
+
     def test_connection(self):
         db = self.client[self.config.get('mongodb')]
         if db is None:

@@ -4,6 +4,7 @@ import ibridges_mongo
 import ckan_connection
 
 iRodsConnection = irods_connection.iRodsConnection
+CollectionMetaDataMapping = irods_connection.CollectionMetaDataMapping
 iBridgesCache = ibridges_cache.iBridgesCache
 iBridgesMongo = ibridges_mongo.iBridgesMongo
 CkanConnection = ckan_connection.CkanConnection

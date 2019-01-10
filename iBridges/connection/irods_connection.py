@@ -3,6 +3,15 @@ from os.path import expanduser
 from ibridges_connection import iBridgesConnection
 
 
+class CollectionMetaDataMapping(iBridgesConnection):
+    ARGUMENTS = [("collection_validator", ""),
+                 ("object_validator", ""),
+                 ("collection_mapper", ""),
+                 ("object_mapper", "")]
+
+    pass
+
+
 class iRodsConnection(iBridgesConnection):
     ARGUMENTS = [('irods_env_file',
                   'path to irods env. file'),
