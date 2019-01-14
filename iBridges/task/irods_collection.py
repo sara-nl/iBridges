@@ -72,6 +72,18 @@ class iRodsCollection(object):
                                       self.session.zone)
                     self.session.permissions.set(acc)
 
+    def remove_ownership(self):
+        coll = self.session.collections.get(self.collection_path)
+        for collection, subcollections, objects in coll.walk(topdown=True):
+            union = objects + [collection]
+            for ooc in union:
+                for acl in self.session.permissions.get(ooc):
+                    acc = iRODSAccess('null',
+                                      ooc.path,
+                                      self.session.username,
+                                      self.session.zone)
+                    self.session.permissions.set(acc)
+
     def _update_data(self):
         lookup = {}
         self._data = []

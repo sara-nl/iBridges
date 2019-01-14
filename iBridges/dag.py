@@ -84,7 +84,7 @@ class iBridgesDag(DAG):
             op = PythonOperator
         else:
             if 'trigger_rule' not in _kwargs:
-                _kwargs['trigger_rule'] = 'all_done'
+                _kwargs['trigger_rule'] = 'all_success'
             _kwargs['op_kwargs']['branch'] = branch
             op = BranchPythonOperator
         return op(**_kwargs)
@@ -101,12 +101,17 @@ class iBridgesDag(DAG):
                               dag=self,
                               python_callable=init_fun)
 
-    def final_task(self, success=True):
+    def final_task(self, success=True, task_id=None):
         def final_fun(**kwargs):
             if not kwargs.pop('success'):
                 raise WorkflowFailedException()
 
-        task_id = 'final_ok' if success else 'final_failed'
+        if task_id is None:
+            task_id = 'final_ok' if success else 'final_failed'
+        if success:
+            trigger_rule = 'all_success'
+        else:
+            trigger_rule = 'one_failed'
         return PythonOperator(provide_context=True,
                               task_id=task_id,
                               op_kwargs={'ibcontext': self.context,
@@ -114,4 +119,5 @@ class iBridgesDag(DAG):
                               start_date=timezone.utcnow(),
                               retries=0,
                               dag=self,
+                              trigger_rule=trigger_rule,
                               python_callable=final_fun)

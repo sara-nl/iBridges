@@ -1,12 +1,6 @@
 import json
-import logging
 from os.path import expanduser
-from irods_collection import iRodsCollection
-
-__all__ = ['irods_test_connection',
-           'irods_lock_collection',
-           'irods_unlock_collection',
-           'irods_check_flatness']
+__all__ = []
 
 
 class iRodsCollectionNotFlat(Exception):
@@ -16,138 +10,73 @@ class iRodsCollectionNotFlat(Exception):
 
 
 def get_irods_zone(cfg):
-    if 'irods_zone_name' in cfg and 'irods_host' in cfg:
-        return '{0}#{1}'.format(cfg.get('irods_host'),
-                                cfg.get('irods_zone_name'))
+    if 'irods_zone_name' not in cfg or 'irods_host' not in cfg:
+        env_file = cfg.get('irods_env_file')
+        with open(expanduser(env_file)) as fp:
+            fcfg = json.load(fp)
     else:
-        auth_file = cfg.get('irods_env_file')
-        with open(expanduser(auth_file)) as fp:
-            cfg = json.load(fp)
-            return '{0}#{1}'.format(cfg.get('irods_host'),
-                                    cfg.get('irods_zone_name'))
+        fcfg = {}
+    fcfg.update(cfg)
+    return '{0}#{1}'.format(fcfg.get('irods_host'),
+                            fcfg.get('irods_zone_name'))
 
 
-def extract_required_fields(fields):
-    def is_required(cfg):
-        if isinstance(cfg, str):
-            return True
-        elif isinstance(cfg, tuple) and len(cfg) == 1:
-            return True
-        elif isinstance(cfg, tuple) and len(cfg) > 1:
-            return cfg[1]
-
-    return [k for k, cfg in fields.items() if is_required(cfg)]
+def extract_irods_collecion_data(data, irods_collection):
+    ret = [x for x in data.get('irods_data')
+           if x['path'] == irods_collection]
+    if len(ret) == 1:
+        return ret[0]
+    else:
+        raise ValueError('collection {0} not found'.format(irods_collection))
 
 
-def check_collection_metadata_fields(_data, _fields):
-    fields = extract_required_fields(_fields)
-    irods_collection = _data.get('irods_collection')
-    data = [x for x in _data.get('irods_data')
-            if x['path'] == irods_collection][0]
-    missing = [k
-               for k in fields
-               if k not in data['meta_data']]
-    if len(missing):
-        avail = [k
-                 for k in fields
-                 if k in data['meta_data']]
-        msg = ("Missing collection metadata fields\n" +
-               "collection: {0}\n" +
-               "missing: {1}\n" +
-               "avail: {2}")
-        raise ValueError(msg.format(irods_collection,
-                                    ', '.join(missing),
-                                    ', '.join(avail)))
-
-
-def check_object_metadata_fields(_data, _fields):
-    fields = extract_required_fields(_fields)
-    irods_collection = _data.get('irods_collection')
-    data = [x for x in _data.get('irods_data')
-            if x['path'] == irods_collection][0]
+def validate_meta_data(md, fields):
+    errors = []
     missing = []
-    for obj in data['objects']:
-        missing += ['{0}:{1}'.format(obj['path'], k)
-                    for k in fields
-                    if k not in obj['meta_data']]
-    if len(missing):
-        msg = ("Missing object metadata fields\n" +
-               "collection: {0}\n" +
-               "missing: {1}")
-        raise ValueError(msg.format(irods_collection,
-                                    ', '.join(missing)))
+    for k, cfg in fields.items():
+        if isinstance(cfg, bool) and cfg:
+            if k not in md:
+                missing.append(k)
+        elif callable(cfg):
+            if cfg(md):
+                errors.append('validation failed {0}'.format(k))
+    if len(errors) or len(missing):
+        msg = "There are validations errors:\n"
+        if len(missing):
+            msg += ("missing: {0}\n" +
+                    "available: {1}").format(missing,
+                                             md.keys())
+        if len(errors):
+            msg += "errors: {0}\n".format(errors)
+        raise ValueError(msg)
+    return True
 
 
-def _aux_get_target_metadata(meta_data, mapping):
+def validate_collection_meta_data(data, irods_collection, fields):
+    md = extract_irods_collecion_data(data, irods_collection)['meta_data']
+    return validate_meta_data(md, fields)
+
+
+def validate_objects_meta_data(data, irods_collection, fields):
+    msg = []
+    for obj in extract_irods_collecion_data(data, irods_collection)['objects']:
+        try:
+            validate_meta_data(obj['meta_data'], fields)
+        except ValueError as e:
+            p = obj['path']
+            msg.append(p + ":\n" + str(e))
+    if len(msg):
+        raise ValueError("\n".join(msg))
+    return True
+
+
+def transform_meta_data(md, fields):
     ret = {}
-    for k, val in mapping.items():
-        if k in meta_data:
-            if isinstance(val, str):
-                ret[val] = meta_data[k]
-            elif isinstance(val, tuple) and len(val) < 3:
-                ret[val[0]] = meta_data[k]
-            elif isinstance(val, tuple) and len(val) >= 3:
-                ret[val[0]] = val[2](meta_data[k])
+    for k, mapping in fields.items():
+        if isinstance(mapping, str) and mapping in md:
+            ret[k] = md[mapping]
+        elif callable(mapping):
+            value = mapping(md)
+            if value is not None:
+                ret[k] = value
     return ret
-
-
-def get_target_metadata(_data, collection_mapping=None, object_mapping=None):
-    irods_collection = _data.get('irods_collection')
-    data = [x for x in _data.get('irods_data')
-            if x['path'] == irods_collection][0]
-    ret = {}
-    if collection_mapping is not None:
-        ret[irods_collection] = _aux_get_target_metadata(data['meta_data'],
-                                                         collection_mapping)
-    if object_mapping is not None:
-        for obj in data['objects']:
-            ret[obj['path']] = _aux_get_target_metadata(obj['meta_data'],
-                                                        object_mapping)
-    return ret
-
-
-def irods_test_connection(ibcontext, **kwargs):
-    logger = logging.getLogger('ipublish')
-    config = ibcontext['irods'].get_config(kwargs)
-    logger.debug(config)
-    with ibcontext['irods'].session() as sess:
-        logger.debug(vars(sess.users.get(sess.username)))
-
-
-def irods_lock_collection(ibcontext, **kwargs):
-    logger = logging.getLogger('ipublish')
-    cfg = ibcontext['irods'].get_config(kwargs)
-    logger.debug(cfg)
-    with ibcontext['irods'].session() as sess:
-        collection = iRodsCollection(sess, cfg['irods_collection'])
-        ibcontext['cache'].write(['irods_zone', 'irods_collection'],
-                                 {'irods_data': collection.lock(),
-                                  'irods_zone': get_irods_zone(cfg),
-                                  'irods_collection': cfg['irods_collection']})
-
-
-def irods_unlock_collection(ibcontext, **kwargs):
-    logger = logging.getLogger('ipublish')
-    cfg = ibcontext['irods'].get_config(kwargs)
-    logger.debug(cfg)
-    with ibcontext['irods'].session() as sess:
-        collection = iRodsCollection(sess, cfg['irods_collection'])
-        key = {'irods_zone': get_irods_zone(cfg),
-               'irods_collection': cfg['irods_collection']}
-        data = ibcontext['cache'].read(key)
-        collection.unlock(data.get('irods_data'))
-
-
-def irods_check_flatness(ibcontext, **kwargs):
-    """
-    Checks if the collection is flat
-    """
-    logger = logging.getLogger('ipublish')
-    cfg = ibcontext['irods'].get_config(kwargs)
-    logger.debug(cfg)
-    key = {'irods_zone': get_irods_zone(cfg),
-           'irods_collection': cfg['irods_collection']}
-    data = ibcontext['cache'].read(key)
-    data = data.get('irods_data', [])
-    if len(data) != 1 or data[0]['path'] != cfg['irods_collection']:
-        raise iRodsCollectionNotFlat(cfg['irods_collection'])

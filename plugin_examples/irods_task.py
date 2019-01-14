@@ -1,9 +1,11 @@
 import datetime
 import re
+import os
 from iBridges.task.irods_task_utils import get_irods_zone
-from iBridges.task.irods_task_utils import check_collection_metadata_fields
-from iBridges.task.irods_task_utils import check_object_metadata_fields
-from iBridges.task.irods_task_utils import get_target_metadata
+from iBridges.task.irods_task_utils import extract_irods_collecion_data
+from iBridges.task.irods_task_utils import validate_collection_meta_data
+from iBridges.task.irods_task_utils import validate_objects_meta_data
+from iBridges.task.irods_task_utils import transform_meta_data
 
 
 __all__ = ['irods_validate_meta_data',
@@ -17,6 +19,11 @@ def get_pixel_data_size(obj):
         return 0
 
 
+def normalize_name(obj):
+    title = obj['TITLE']
+    return re.sub(r"[^-a-z-_]", "", title.lower())
+
+
 def get_date_time(obj):
     if 'InstanceCreationTime' in obj and 'InstanceCreationDate' in obj:
         time = re.sub('([0-9]+)(\.[0-9]*)?', r'\1', obj.InstanceCreationTime)
@@ -27,22 +34,34 @@ def get_date_time(obj):
         return ''
 
 
+COLLECTION_META_DATA_VALIDATION = {
+    "TITLE": True,
+    "OWNER": True
+}
+
+OBJECT_META_DATA_VALIDATION = {
+    "Title": True,
+    "url": True
+}
+
 COLLECTION_META_DATA_MAPPING = {
-    'TITLE': ("title", True),
-    'OWNER': ("author", True)
+    "title": "TITLE",
+    "author": "OWNER",
+    "name": normalize_name
 }
 
 OBJECT_META_DATA_MAPPING = {
-    'Title': ('title', True),
-    'url': ('url', True),
-    'PhotometricInterpretation': ('PhotometricInterpretation', False),
-    'Manufacturer': ('Manufacturer', False),
-    'InstanceCreationTime': ('InstanceCreationTime', False, get_date_time),
-    'InstitutionName': ('InstitutionName', False),
-    'InstitutionalDepartmentName': ('InstitutionalDepartmentName', False),
-    'ScanOptions': ('ScanOptions', False),
-    'PatientPosition': ('PatientPosition', False),
-    'PixelDataSize': ('PixelDataSize', False, get_pixel_data_size)
+    'title': 'Title',
+    'url': 'url',
+    'name': 'name',
+    'PhotometricInterpretation': 'PhotometricInterpretation',
+    'Manufacturer': 'Manufacturer',
+    'InstanceCreationTime': get_date_time,
+    'InstitutionName': 'InstitutionName',
+    'InstitutionalDepartmentName': 'InstitutionalDepartmentName',
+    'ScanOptions': 'ScanOptions',
+    'PatientPosition': 'PatientPosition',
+    'PixelDataSize': get_pixel_data_size
 }
 
 
@@ -55,12 +74,16 @@ def irods_validate_meta_data(ibcontext, **kwargs):
            'irods_collection': cfg['irods_collection']}
     data = ibcontext['cache'].read(key)
     if data is None:
-        raise ValueError('collection not found in cache: {0}'
-                         .format(cfg['irods_collection']))
-    check_collection_metadata_fields(data,
-                                     COLLECTION_META_DATA_MAPPING)
-    check_object_metadata_fields(data,
-                                 OBJECT_META_DATA_MAPPING)
+        raise ValueError('collection not found in cache: {0} (zone: {1})'
+                         .format(key['irods_collection'],
+                                 key['irods_zone']))
+    validate_collection_meta_data(data,
+                                  cfg['irods_collection'],
+                                  COLLECTION_META_DATA_VALIDATION)
+
+    validate_objects_meta_data(data,
+                               cfg['irods_collection'],
+                               OBJECT_META_DATA_VALIDATION)
 
 
 def irods_transform_meta_data(ibcontext, **kwargs):
@@ -72,10 +95,16 @@ def irods_transform_meta_data(ibcontext, **kwargs):
            'irods_collection': cfg['irods_collection']}
     data = ibcontext['cache'].read(key)
     if data is None:
-        raise ValueError('collection not found in cache: {0}'
-                         .format(cfg['irods_collection']))
+        raise ValueError('collection not found in cache: {0} (zone: {1})'
+                         .format(key['irods_collection'],
+                                 key['irods_zone']))
 
-    md = get_target_metadata(data,
-                             collection_mapping=COLLECTION_META_DATA_MAPPING,
-                             object_mapping=OBJECT_META_DATA_MAPPING)
+    data = extract_irods_collecion_data(ibcontext['cache'].read(key),
+                                        cfg['irods_collection'])
+    md = {cfg['irods_collection']:
+          transform_meta_data(data['meta_data'], COLLECTION_META_DATA_MAPPING)}
+    for obj in data['objects']:
+        obj['meta_data']['name'] = os.path.basename(obj['path'])
+        md[obj['path']] = transform_meta_data(obj['meta_data'],
+                                              OBJECT_META_DATA_MAPPING)
     ibcontext['cache'].update(key, {'target_meta_data': md})
