@@ -1,7 +1,7 @@
 import os
 from pymongo import MongoClient
 from pymongo import ASCENDING
-from ibridges_connection import iBridgesConnection
+from .ibridges import iBridgesConnection
 
 
 class iBridgesMongo(iBridgesConnection):

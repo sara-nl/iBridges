@@ -1,2 +1,2 @@
 # flake8: noqa
-from irods_task import *
+from .irods_task import *

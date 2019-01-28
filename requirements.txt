@@ -4,7 +4,7 @@ lxml
 bleach
 termcolor
 python-irodsclient
-uuid
+# uuid
 mock
 pytest
 pymongo

@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import irods.password_obfuscation as password_obfuscation
 
 
-with open("/usr/lib/airflow/.irods/.irodsA", "wb") as fp:
-    fp.write(password_obfuscation.encode("test"))
+with open("/usr/lib/airflow/.irods/.irodsA", "w") as fp:
+    pw = password_obfuscation.encode("test")
+    fp.write(pw)
 
 # Test the connection
 # from irods.session import iRODSSession

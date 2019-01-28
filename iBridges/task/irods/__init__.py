@@ -1,20 +1,23 @@
 import logging
 from irods.meta import iRODSMeta
 from irods.models import Collection
-from irods_collection import iRodsCollection
-from irods_task_utils import iRodsCollectionNotFlat
-from irods_task_utils import get_irods_zone
+from .collection import iRodsCollection
+from .utils import iRodsCollectionNotFlat
+from .utils import get_irods_zone
 
 
-__all__ = ['irods_test_connection',
-           'irods_lock_collection',
-           'irods_unlock_collection',
-           'irods_check_flatness',
-           'irods_update_repository_info',
-           'irods_remove_ownership']
+__all__ = ['test_connection',
+           'lock_collection',
+           'unlock_collection',
+           'check_flatness',
+           'update_repository_info',
+           'remove_ownership']
 
 
-def irods_test_connection(ibcontext, **kwargs):
+def test_connection(ibcontext, **kwargs):
+    """
+    Test theconnection to irods server
+    """
     logger = logging.getLogger('ipublish')
     config = ibcontext['irods'].get_config(kwargs)
     logger.debug(config)
@@ -22,7 +25,10 @@ def irods_test_connection(ibcontext, **kwargs):
         logger.debug(vars(sess.users.get(sess.username)))
 
 
-def irods_lock_collection(ibcontext, **kwargs):
+def lock_collection(ibcontext, **kwargs):
+    """
+    Transfer ownership of collection to current user.
+    """
     logger = logging.getLogger('ipublish')
     cfg = ibcontext['irods'].get_config(kwargs)
     logger.debug(cfg)
@@ -34,7 +40,10 @@ def irods_lock_collection(ibcontext, **kwargs):
                                   'irods_collection': cfg['irods_collection']})
 
 
-def irods_unlock_collection(ibcontext, **kwargs):
+def unlock_collection(ibcontext, **kwargs):
+    """
+    Revert ownerhip transer to original user
+    """
     logger = logging.getLogger('ipublish')
     cfg = ibcontext['irods'].get_config(kwargs)
     logger.debug(cfg)
@@ -46,7 +55,7 @@ def irods_unlock_collection(ibcontext, **kwargs):
         collection.unlock(data.get('irods_data'))
 
 
-def irods_check_flatness(ibcontext, **kwargs):
+def check_flatness(ibcontext, **kwargs):
     """
     Checks if the collection is flat
     """
@@ -61,7 +70,7 @@ def irods_check_flatness(ibcontext, **kwargs):
         raise iRodsCollectionNotFlat(cfg['irods_collection'])
 
 
-def irods_update_repository_info(ibcontext, **kwargs):
+def update_repository_info(ibcontext, **kwargs):
     logger = logging.getLogger('ipublish')
     cfg = ibcontext['irods'].get_config(kwargs)
     logger.debug(cfg)
@@ -78,7 +87,7 @@ def irods_update_repository_info(ibcontext, **kwargs):
                               iRODSMeta(k, value))
 
 
-def irods_remove_ownership(ibcontext, **kwargs):
+def remove_ownership(ibcontext, **kwargs):
     logger = logging.getLogger('ipublish')
     cfg = ibcontext['irods'].get_config(kwargs)
     logger.debug(cfg)

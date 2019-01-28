@@ -1,11 +1,11 @@
 import datetime
 import re
 import os
-from iBridges.task.irods_task_utils import get_irods_zone
-from iBridges.task.irods_task_utils import extract_irods_collecion_data
-from iBridges.task.irods_task_utils import validate_collection_meta_data
-from iBridges.task.irods_task_utils import validate_objects_meta_data
-from iBridges.task.irods_task_utils import transform_meta_data
+from iBridges.task.irods.utils import get_irods_zone
+from iBridges.task.irods.utils import extract_irods_collecion_data
+from iBridges.task.irods.utils import validate_collection_meta_data
+from iBridges.task.irods.utils import validate_objects_meta_data
+from iBridges.task.irods.utils import transform_meta_data
 
 
 __all__ = ['irods_validate_meta_data',

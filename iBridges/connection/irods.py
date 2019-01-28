@@ -1,6 +1,6 @@
 from irods.session import iRODSSession
 from os.path import expanduser
-from ibridges_connection import iBridgesConnection
+from .ibridges import iBridgesConnection
 
 
 class CollectionMetaDataMapping(iBridgesConnection):

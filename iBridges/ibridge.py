@@ -3,9 +3,9 @@ import sys
 import argparse
 import importlib
 import pprint
-from context import Context
-import task
-from logger import LoggerFactory
+from .context import Context
+from . import task
+from .logger import LoggerFactory
 
 
 def get_task_func(args, task_name):

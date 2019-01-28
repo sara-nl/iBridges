@@ -16,7 +16,7 @@ RUN apt-get update &&\
     odbc-postgresql \
     libmysqlclient-dev \
     mysql-client \
-    python-pip \
+    python3-pip \
     supervisor \
     curl \
     emacs \
@@ -25,10 +25,9 @@ RUN apt-get update &&\
 
 # install version 1.10.0 instead of 1.10.1 because of the bug
 # https://issues.apache.org/jira/browse/AIRFLOW-3498?jql=text%20~%20%22trigger_dag%22
-RUN pip install --upgrade pip && \
-    export SLUGIFY_USES_TEXT_UNIDECODE=yes &&\
-    pip2 install apache-airflow[devel,password,postgres,rabbitmq,celery]==1.10.0 && \
-    pip2 install python-irodsclient \
+RUN pip3 install --upgrade pip
+RUN export SLUGIFY_USES_TEXT_UNIDECODE=yes && pip3 install apache-airflow[devel,password,postgres,rabbitmq,celery]==1.10.0
+RUN pip3 install python-irodsclient \
                  ipython \
                  urllib3 \
                  requests  \

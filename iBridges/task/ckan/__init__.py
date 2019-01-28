@@ -1,9 +1,9 @@
 import logging
-from irods_task_utils import get_irods_zone
+from iBridges.task.irods.utils import get_irods_zone
 
 
-__all__ = ['ckan_test_connection',
-           'ckan_create_package']
+__all__ = ['test_connection',
+           'create_package']
 
 
 class CkanOrganizationNotFound(Exception):
@@ -12,7 +12,7 @@ class CkanOrganizationNotFound(Exception):
         super(CkanOrganizationNotFound, self).__init__(msg)
 
 
-def ckan_test_connection(ibcontext, **kwargs):
+def test_connection(ibcontext, **kwargs):
     logger = logging.getLogger('ipublish')
     config = ibcontext['ckan'].get_config(kwargs)
     logger.debug(config)
@@ -24,7 +24,7 @@ def ckan_test_connection(ibcontext, **kwargs):
         raise RuntimeError('CKAN connection error')
 
 
-def ckan_create_package(ibcontext, **kwargs):
+def create_package(ibcontext, **kwargs):
     logger = logging.getLogger('ipublish')
     irods_cfg = ibcontext['irods'].get_config(kwargs)
     ckan_cfg = ibcontext['ckan'].get_config(kwargs)

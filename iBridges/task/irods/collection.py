@@ -4,6 +4,9 @@ from irods.access import iRODSAccess
 
 
 class iRodsCollection(object):
+    """
+    A class representing the iRods collection
+    """
     def __init__(self, session, collection_path):
         self.session = session
         self.collection_path = collection_path
@@ -28,6 +31,11 @@ class iRodsCollection(object):
         return self._data
 
     def lock(self):
+        """
+        Change the ownership to current user.
+        Set readonly ownership to original user.
+        Return json document.
+        """
         ret = self.data
         coll = self.session.collections.get(self.collection_path)
         for collection, subcollections, objects in coll.walk(topdown=True):

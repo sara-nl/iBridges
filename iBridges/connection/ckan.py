@@ -1,6 +1,6 @@
 import requests
 import pprint
-from ibridges_connection import iBridgesConnection
+from .ibridges import iBridgesConnection
 
 
 class CkanConnection(iBridgesConnection):

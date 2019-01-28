@@ -70,7 +70,8 @@ class iBridgesDag(DAG):
     def task(self, taskfn, branch=None, **kwargs):
         _kwargs = {
             'provide_context': True,
-            'task_id': taskfn.__name__,
+            'task_id': "{0}.{1}".format(taskfn.__module__,
+                                        taskfn.__name__),
             'op_args': [],
             'op_kwargs': {'ibcontext': self.context},
             'start_date': timezone.utcnow(),

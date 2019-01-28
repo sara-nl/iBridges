@@ -1,6 +1,6 @@
 import json
-import connection
 import os
+from . import connection
 
 
 class Context(object):

@@ -1,6 +1,6 @@
 import os
 import json
-from ibridges_connection import iBridgesConnection
+from .ibridges import iBridgesConnection
 
 
 class iBridgesCache(iBridgesConnection):

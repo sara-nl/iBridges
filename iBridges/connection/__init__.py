@@ -1,10 +1,10 @@
-import irods_connection
-import ibridges_cache
-import ibridges_mongo
-import ckan_connection
+from . import irods
+from . import cache
+from . import mongo
+from . import ckan
 
-iRodsConnection = irods_connection.iRodsConnection
-CollectionMetaDataMapping = irods_connection.CollectionMetaDataMapping
-iBridgesCache = ibridges_cache.iBridgesCache
-iBridgesMongo = ibridges_mongo.iBridgesMongo
-CkanConnection = ckan_connection.CkanConnection
+iRodsConnection = irods.iRodsConnection
+CollectionMetaDataMapping = irods.CollectionMetaDataMapping
+iBridgesCache = cache.iBridgesCache
+iBridgesMongo = mongo.iBridgesMongo
+CkanConnection = ckan.CkanConnection
