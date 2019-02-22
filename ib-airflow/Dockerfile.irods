@@ -80,6 +80,7 @@ ADD irods/setup_answers.txt /app/setup_answers.txt
 ADD irods/setup_irods.sh /app/setup_irods.sh
 ADD irods/irods_environment.json /root/.irods/irods_environment.json
 ADD irods/sleep.sh /app/sleep.sh
+ADD irods/sample-data /app/sample-data
 
 RUN cd /app && \
     wget https://github.com/irods/irods/archive/4.1.11.tar.gz && \

@@ -20,7 +20,21 @@ else
     ( echo irods
       echo irods
       cat /app/setup_answers.txt
-    ) | /var/lib/irods/packaging/setup_irods.sh
+    ) | /var/lib/irods/packaging/setup_irods.sh &
 fi
+
+# wait for service
+set +e
+curl localhost:1247
+res=$?
+while [[ $res -ne  0 ]]
+do
+    curl localhost:1247
+    res=$?
+    sleep 1
+done
+
+set -e
+/app/sample-data/prepare_collections.py
 
 /app/sleep.sh
