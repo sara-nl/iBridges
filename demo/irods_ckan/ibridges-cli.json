@@ -1,0 +1,26 @@
+{
+  "irods": {
+    "_connection": "iRodsConnection",
+    "irods_authentication_file": "~/.irods/.irodsA",
+    "irods_env_file": "~/.irods/irods_environment.json"
+  },
+  "cache": {
+    "_connection": "iBridgesMongo",
+    "mongodb_url": "mongodb://localhost:27017",
+    "mongodb": "ibridges",
+    "mongodb_collection": "ibridges"
+  },
+  "ckan": {
+    "_connection": "CkanConnection",
+    "ckan_api_token": "d0af7090-fc3e-4342-8f9c-40acc28943bd",
+    "ckan_api_url": "http://127.0.0.1:5000/api/3",
+    "ckan_dataset_url": "http://localhost:5000/dataset",
+    "ckan_org": "test"
+  },
+  "cacheXXXX": {
+    "_connectionXXX": "iBridgesCache",
+    "ib_workdir": "~/.ibridges/ibridges"
+  }
+}
+
+

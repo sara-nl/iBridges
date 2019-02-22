@@ -1,6 +1,0 @@
-{
-    "irods_host": "icat",
-    "irods_port": 1247,
-    "irods_zone_name": "tempZone",
-    "irods_user_name": "rods"
-}

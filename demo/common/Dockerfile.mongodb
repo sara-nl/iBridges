@@ -1,0 +1,21 @@
+FROM ubuntu:16.04
+#  xenial
+#  echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' > /etc/apt/sources.list.d/mongodb.list && \
+# apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 && \
+#  
+RUN \
+  apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5  && \
+  echo "deb [ arch=amd64] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" >> /etc/apt/sources.list.d/mongodb-org-3.6.list && \
+  apt-get update && \
+  apt-get install -y mongodb-org && \
+  mkdir -p /data/db
+  
+
+# VOLUME ["/data/db"]
+
+WORKDIR /data
+
+CMD ["mongod", "--bind_ip_all"]
+
+EXPOSE 27017
+EXPOSE 28017

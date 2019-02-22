@@ -1,0 +1,64 @@
+FROM ubuntu:16.04
+
+RUN useradd -ms /bin/bash -d /usr/lib/airflow airflow
+
+RUN apt-get update &&\
+    apt-get install -y \
+    lsb-release \
+    sudo \
+    wget \
+    less \
+    patch \
+    apt-transport-https \
+    dnsutils \
+    python-software-properties software-properties-common \
+    postgresql postgresql-client postgresql-contrib \
+    odbc-postgresql \
+    libmysqlclient-dev \
+    mysql-client \
+    python3-pip \
+    supervisor \
+    curl \
+    emacs \
+    git
+
+
+# install version 1.10.0 instead of 1.10.1 because of the bug
+# https://issues.apache.org/jira/browse/AIRFLOW-3498?jql=text%20~%20%22trigger_dag%22
+RUN pip3 install --upgrade pip
+RUN export SLUGIFY_USES_TEXT_UNIDECODE=yes && pip3 install apache-airflow[devel,password,postgres,rabbitmq,celery]==1.10.0
+RUN pip3 install python-irodsclient \
+                 ipython \
+                 urllib3 \
+                 requests  \
+                 lxml  \
+                 bleach \
+                 termcolor \
+                 uuid  \
+                 mock  \
+                 pytest \
+                 pymongo
+
+ADD airflow/sleep.sh /app/sleep.sh
+ADD airflow/start.sh /app/start.sh
+
+RUN mkdir -p /var/log/supervisor && chown airflow:airflow /var/log/supervisor
+RUN mkdir -p /var/run/supervisor && chown airflow:airflow /var/run/supervisor
+USER airflow
+WORKDIR /usr/lib/airflow
+RUN mkdir -p /usr/lib/airflow/airflow
+RUN mkdir -p /usr/lib/airflow/supervisor && mkdir -p /usr/lib/airflow/.irods
+  
+ENV AIRFLOW_HOME /usr/lib/airflow/airflow
+ENV PYTHONPATH /home/iBridges/
+
+ADD airflow/supervisord.conf /etc/supervisor/supervisord.conf
+ADD airflow/airflow.cfg /usr/lib/airflow/airflow/airflow.cfg
+ADD airflow/unittests.cfg /usr/lib/airflow/airflow/unittests.cfg
+ADD airflow/irods_environment.json /usr/lib/airflow/.irods/irods_environment.json
+ADD airflow/init_irods.py /usr/lib/airflow/init_irods.py
+
+RUN /usr/lib/airflow/init_irods.py
+
+
+CMD ["/app/start.sh"]

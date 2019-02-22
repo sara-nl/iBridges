@@ -1,0 +1,108 @@
+version: '2'
+
+services:
+
+  # ############################################
+  # Postgres used by iRODS, airflow and ckan
+  # ############################################
+  db:
+    hostname: db
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+
+  # ###################################
+  # MongoDB used by iBridges
+  # ###################################
+  mongodb:
+    hostname: mongodb
+    build:
+      context: ../common
+      dockerfile: Dockerfile.mongodb
+    ports:
+      - 27017:27017
+      - 28017:28017
+
+  mongoexpress:
+    hostname: mongoexpress.airflow
+    build:
+      context: ../common
+      dockerfile: Dockerfile.mongoexpress
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    links:
+      - "mongodb:mongo"
+
+  # #############
+  # iRODS service
+  # #############
+  icat:
+    hostname: icat
+    build:
+      context: ../common
+      dockerfile: Dockerfile.irods
+    ports:
+      - "127.0.0.1:1247:1247"
+    depends_on:
+      - db
+    links:
+      - "db:irodsdb"
+    volumes:
+      - "${VOLUME}:/home/iBridges"
+
+  # #####################
+  # Airflow
+  # #####################
+  airflow:
+    hostname: scheduler.airflow
+    build:
+      context: ../common
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      - db
+      - mongodb
+      - ckan
+    environment:
+      - "AIRFLOW__CORE__DAGS_FOLDER=/home/iBridges/demo/irods_ckan/dags"
+      - "PYTHONPATH=/home/iBridges"
+    links:
+      - "db:airflowdb"
+      - "mongodb:mongodb"
+      - "icat:icat"
+      - "ckan:ckan"
+    volumes:
+      - "${VOLUME}:/home/iBridges"
+    ports:
+      - "8080:8080"
+
+  # #############
+  # CKAN
+  # #############
+  ckan:
+    hostname: ckan
+    build:
+      context: .
+      dockerfile: Dockerfile.ckan
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+      - solr
+      - redis
+    links:
+      - "db:db"
+      - "solr:solr"
+      - "redis:redis"
+
+
+  solr:
+    hostname: solr
+    build:
+      context: .
+      dockerfile: Dockerfile.solr
+
+  redis:
+    hostname: redis
+    image: redis:latest

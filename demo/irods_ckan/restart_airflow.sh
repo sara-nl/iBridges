@@ -1,0 +1,4 @@
+CONTAINER_NAME=irods_ckan_airflow_1
+
+docker exec $CONTAINER_NAME supervisorctl restart airflow_scheduler
+docker exec $CONTAINER_NAME supervisorctl restart airflow_webserver
