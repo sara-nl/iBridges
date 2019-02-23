@@ -1,0 +1,151 @@
+version: '2'
+
+services:
+
+  # ############################################
+  # Postgres used by iRODS, airflow and b2share
+  # ############################################
+  db:
+    hostname: db
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+
+  # ###################################
+  # MongoDB used by iBridges
+  # ###################################
+  mongodb:
+    hostname: mongodb
+    build:
+      context: ../common
+      dockerfile: Dockerfile.mongodb
+    ports:
+      - 27017:27017
+      - 28017:28017
+
+  mongoexpress:
+    hostname: mongoexpress.airflow
+    build:
+      context: ../common
+      dockerfile: Dockerfile.mongoexpress
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    links:
+      - "mongodb:mongo"
+
+  # #############
+  # iRODS service
+  # #############
+  icat:
+    hostname: icat
+    build:
+      context: ../common
+      dockerfile: Dockerfile.irods
+    ports:
+      - "127.0.0.1:1247:1247"
+    depends_on:
+      - db
+      - handle
+    links:
+      - "db:irodsdb"
+      - "handle:handle"
+    volumes:
+      - "${VOLUME}:/home/iBridges"
+    environment:
+      - "IRODS_WITH_PIDS=1"
+
+
+  # #####################
+  # Airflow
+  # #####################
+  airflow:
+    hostname: scheduler.airflow
+    build:
+      context: ../common
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      - db
+      - mongodb
+      - b2share
+    links:
+      - "db:airflowdb"
+      - "mongodb:mongodb"
+      - "icat:icat"
+      - "b2share:b2share"
+    volumes:
+      - "${VOLUME}:/home/iBridges"
+    ports:
+      - "8080:8080"
+
+  # #############
+  # handle
+  # #############
+  handle:
+    hostname: handle
+    build:
+      context: ../common
+      dockerfile: Dockerfile.pidmock
+    ports:
+      - "5001:5001"
+    
+  # #############
+  # b2share
+  # #############
+  redis:
+    image: redis:3.2-alpine
+    expose:
+      - "6379"
+
+  mq:
+    # container_name: mq
+    hostname: b2share-redis
+    image: rabbitmq:3.6-management-alpine
+    restart: "always"
+    environment:
+      - "RABBITMQ_DEFAULT_USER=${B2SHARE_RABBITMQ_USER}"
+      - "RABBITMQ_DEFAULT_PASS=${B2SHARE_RABBITMQ_PASS}"
+    expose:
+      - "15672"
+      - "5672"
+
+  elasticsearch:
+    # container_name: elasticsearch
+    build:
+      context: .
+      dockerfile: Dockerfile.elasticsearch
+    expose:
+      - "9200"
+      - "9300"
+
+
+  b2share:
+    # container_name: b2share
+    image: eudatb2share/b2share:2.1.2
+    environment:
+      - "B2ACCESS_CONSUMER_KEY=${B2ACCESS_CONSUMER_KEY}"
+      - "B2ACCESS_SECRET_KEY=${B2ACCESS_SECRET_KEY}"
+      - "USE_STAGING_B2ACCESS=${USE_STAGING_B2ACCESS}"
+      - "B2SHARE_SECRET_KEY=${B2SHARE_SECRET_KEY}"
+      - "B2SHARE_JSONSCHEMAS_HOST=${B2SHARE_JSONSCHEMAS_HOST}"
+      - "INIT_DB_AND_INDEX=${INIT_DB_AND_INDEX}"
+      - "LOAD_DEMO_COMMUNITIES_AND_RECORDS=${LOAD_DEMO_COMMUNITIES_AND_RECORDS}"
+      - "B2SHARE_PREFERRED_URL_SCHEME=https"
+      - "B2SHARE_SQLALCHEMY_DATABASE_URI='postgresql+psycopg2://${B2SHARE_POSTGRESQL_USER}:${B2SHARE_POSTGRESQL_PASSWORD}@db:5432/${B2SHARE_POSTGRESQL_DBNAME}'"
+      - "B2SHARE_CACHE_REDIS_HOST='redis'"
+      - "B2SHARE_CACHE_REDIS_URL='redis://redis:6379/0'"
+      - "B2SHARE_ACCOUNTS_SESSION_REDIS_URL='redis://redis:6379/1'"
+      - "B2SHARE_BROKER_URL='amqp://${B2SHARE_RABBITMQ_USER}:${B2SHARE_RABBITMQ_PASS}@mq:5672/'"
+      - "B2SHARE_CELERY_BROKER_URL='amqp://${B2SHARE_RABBITMQ_USER}:${B2SHARE_RABBITMQ_PASS}@mq:5672/'"
+      - "B2SHARE_CELERY_RESULT_BACKEND='redis://redis:6379/2'"
+      - "B2SHARE_SEARCH_ELASTIC_HOSTS='elasticsearch'"
+    expose:
+      - "5000"
+    ports:
+      - "127.0.0.1:5000:5000"
+    links:
+      - elasticsearch
+      - redis
+      - db
+
