@@ -1,0 +1,15 @@
+{
+  "irods": {
+    "host": "ibridges",
+    "http_endpoint": "http endpoint",
+    "env_file": "",
+    "user": "user",
+    "zone": "zone"
+  },
+  "type": "B2shareDraft",
+  "draft": {
+    "api_token": "******",
+    "api_url": "https://trng-b2share.eudat.eu/api/",
+    "community": "e9b9792e-79fb-4b07-b6b4-b9c2bd06d095"
+  }
+}

@@ -236,10 +236,10 @@ def publish_draft(connector, logger_factory,
                 raise ValueError('Publication error')
             if not connector.checkCollection():
                 raise ValueError('Metadata validation error')
-            connector.assignTicket()
+            #connector.assignTicket()
             connector.createDraft()
             execute_steps([connector.patchDraft,
-                           connector.patchDraftTickets,
+                           #connector.patchDraftTickets,
                            connector.patchDraftPIDs,
                            connector.uploadToRepo],
                           batch=batch,
@@ -264,6 +264,7 @@ def main(argv=sys.argv[1:]):
     logger = logger_factory.get_logger()
     try:
         config = read_config(args)
+        print config
         draft_name = str(config.get('type'))
         draft_class = get_draft_class(draft_name)
         # add cli arguments to config

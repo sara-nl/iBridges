@@ -288,12 +288,14 @@ class iRodsCollection():
         with Tempdir(prefix="ipublish_", remove=remove) as td:
             for obj in self.coll.data_objects:
                 target = os.path.join(td, obj.name)
+                print target
                 self.downloadObject(obj.path, target)
                 yield target
 
     def downloadObject(self, path, target):
         self.logger.debug('download object %s -> %s', path, target)
         with open(target, 'wb') as outfile:
+            print outfile
             with self.session.data_objects.open(path, 'r') as infile:
                 for buff in buffered_read(infile):
                     outfile.write(buff)
