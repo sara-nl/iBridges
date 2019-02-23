@@ -1,4 +1,0 @@
-[submodule "dataverse-client-python"]
-	path = dataverse-client-python
-        url = https://github.com/sara-nl/dataverse-client-python.git
-
