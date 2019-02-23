@@ -1,5 +1,7 @@
 FROM centos:7
 
+ADD irods/surfsara-irods.repo /etc/yum.repos.d/surfsara-irods.repo
+
 RUN yum update -y && \
     yum install -y \
     rsync wget less emacs make cmake gcc gcc-c++
@@ -39,14 +41,6 @@ RUN yum install -y \
     diffutils \
     patch
 
-# Openstack
-RUN yum install -y centos-release-openstack-rocky
-
-RUN yum install -y \
-    python-swiftclient \
-    python2-keystoneclient \
-    python-openstackclient
-
 
 RUN pip install --upgrade pip && \
     pip install flask \
@@ -67,8 +61,8 @@ RUN yum install -y ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-i
     yum install -y ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-database-plugin-postgres-1.11-centos7-x86_64.rpm && \
     yum install -y ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-runtime-4.1.11-centos7-x86_64.rpm && \
     yum install -y ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-dev-4.1.11-centos7-x86_64.rpm && \
-    yum install -y ftp://ftp.renci.org/pub/irods/plugins/irods_resource_plugin_s3/1.6/irods-resource-plugin-s3-1.6-centos7-x86_64.rpm && \
-    rpm -i --replacefiles ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-icommands-4.1.11-centos7-x86_64.rpm
+    rpm -i --replacefiles ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-icommands-4.1.11-centos7-x86_64.rpm && \
+    yum install -y msi-persistent-id-master
 
 
 ################################################################################
@@ -81,6 +75,10 @@ ADD irods/setup_irods.sh /app/setup_irods.sh
 ADD irods/irods_environment.json /root/.irods/irods_environment.json
 ADD irods/sleep.sh /app/sleep.sh
 ADD irods/sample-data /app/sample-data
+ADD irods/pids.re /etc/irods/pids.re
+# PID support
+ADD irods/register_pid_pep.py /app/register_pid_pep.py
+ADD irods/irods_pid.json /etc/irods/irods_pid.json
 
 RUN cd /app && \
     wget https://github.com/irods/irods/archive/4.1.11.tar.gz && \

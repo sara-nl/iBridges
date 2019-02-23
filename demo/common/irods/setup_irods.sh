@@ -33,8 +33,28 @@ do
     res=$?
     sleep 1
 done
-
 set -e
+
+if [ "${IRODS_WITH_PIDS}" = "1" ]; then
+    echo "register pid"
+    /app/register_pid_pep.py
+fi
+
+
+set +e
+if [ "${IRODS_WITH_PIDS}" = "1" ]; then
+    echo "wait for pids"
+    curl 'handle:5001/hrls/handles/21.T12995?URL=irods'
+    res=$?
+    while [[ $res -ne  0 ]]
+    do
+        curl 'handle:5001/hrls/handles/21.T12995?URL=irods'
+        res=$?
+        sleep 1
+    done
+fi
+set -e
+
 /app/sample-data/prepare_collections.py
 
 /app/sleep.sh

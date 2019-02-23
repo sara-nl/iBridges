@@ -1,0 +1,38 @@
+{
+  "verbose": true,
+  "curl_verbose": true,
+
+  "irods":{
+    "server": "localhost",
+    "port": 1247,
+
+    "url_prefix": "irods://localhost:1247",
+    "webdav_prefix": "http://localhost:80"
+  },
+
+  "lookup":{
+    "url": "http://handle/hrls/handles",
+    "port": 5001,
+    "prefix": "21.T12995",
+    "password": null,
+    "insecure": true,
+    "limit": null,
+    "page": null,
+    "before_create": true,
+    "key": "URL",
+    "value": "{IRODS_URL_PREFIX}{OBJECT}"
+  },
+
+  "handle":{
+    "url": "http://handle/api/handles",
+    "port": 5001,
+    "admin": "0.NA",
+    "prefix": "21.T12995",
+    "cert": "/etc/irods/308_21.T12995_TRAINING_certificate_only.pem",
+    "key": "/etc/irods/308_21.T12995_TRAINING_privkey.pem",
+
+    "insecure": true,
+    "passphrase": null
+  }
+
+}

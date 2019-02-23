@@ -1,0 +1,16 @@
+FROM ubuntu:16.04
+#  xenial
+#  echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' > /etc/apt/sources.list.d/mongodb.list && \
+# apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 && \
+#  
+RUN \
+  apt-get update && \
+  apt-get install -y python git python-pip && \
+  git clone https://github.com/sara-nl/surfsara-handle-client-cpp /app/ && \
+  pip install -r /app/handle-mockup/requirements.txt
+
+
+CMD ["/app/handle-mockup/handle_mock.py", "--port", "5001", "--host", "0.0.0.0", "--pid_file", "/app/handle.pid"]
+
+EXPOSE 5001
+
