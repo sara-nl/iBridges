@@ -1,4 +1,4 @@
-from irods.session import iRODSSession
+from irods_session import iRODSSession
 from os.path import expanduser
 from .ibridges import iBridgesConnection
 
