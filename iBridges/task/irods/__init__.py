@@ -1,6 +1,7 @@
 import logging
 from irods.meta import iRODSMeta
 from irods.models import Collection
+import irods.keywords as kw
 from .collection import iRodsCollection
 from .utils import iRodsCollectionNotFlat
 from .utils import get_irods_zone
@@ -11,7 +12,8 @@ __all__ = ['test_connection',
            'unlock_collection',
            'check_flatness',
            'update_repository_info',
-           'remove_ownership']
+           'remove_ownership',
+           'copy_collection']
 
 
 def test_connection(ibcontext, **kwargs):
@@ -94,3 +96,36 @@ def remove_ownership(ibcontext, **kwargs):
     with ibcontext['irods'].session() as sess:
         collection = iRodsCollection(sess, cfg['irods_collection'])
         collection.remove_ownership()
+
+
+def copy_collection(ibcontext, **kwargs):
+    logger = logging.getLogger('ipublish')
+    cfg = ibcontext['irods'].get_config(kwargs)
+    key = {'irods_zone': get_irods_zone(cfg),
+           'irods_collection': cfg['irods_collection']}
+    target = cfg['irods_target']
+    if target[-1] == '/':
+        target = target[:-1]
+
+    logger.debug(cfg)
+    with ibcontext['irods'].session() as sess:
+        data = ibcontext['cache'].read(key)
+        data = data.get('irods_data', [])
+        for item in data:
+            if item.get('type') == 'collection':
+                p = item.get('path')[len(cfg['irods_collection']):]
+                target_path = target + p
+                logger.debug(target_path)
+                sess.collections.create(target_path, recurse=True)
+                for obj in item.get('objects', []):
+                    options = {kw.VERIFY_CHKSUM_KW: '',
+                               kw.METADATA_INCLUDED_KW: ''}
+                    p = target + \
+                        obj.get('path')[len(cfg['irods_collection']):]
+                    logger.debug("%s -> %s", obj.get('path'), p)
+                    sess.data_objects.copy(obj.get('path'),
+                                           p,
+                                           **options)
+                    # todo test if succeeded
+            else:
+                print(item.get('path'))
