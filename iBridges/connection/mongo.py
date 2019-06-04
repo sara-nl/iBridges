@@ -35,6 +35,9 @@ class iBridgesMongo(iBridgesConnection):
         obj = {'$set': sub_doc}
         self.collection.update_one(key, obj)
 
+    def remove_if_exists(self, key):
+        self.collection.delete_one(key)
+
     def test_connection(self):
         db = self.client[self.config.get('mongodb')]
         if db is None:

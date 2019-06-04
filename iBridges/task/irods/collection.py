@@ -7,9 +7,16 @@ class iRodsCollection(object):
     """
     A class representing the iRods collection
     """
-    def __init__(self, session, collection_path):
+    def __init__(self, session, collection_path,
+                 target_user=None, target_zone=None):
         self.session = session
         self.collection_path = collection_path
+        self.target_users = {}
+        self.target_users[(self.session.username, self.session.zone)] = True
+        if target_user is not None:
+            if target_zone is None:
+                target_zone = self.session.zone
+            self.target_users[(target_user, target_zone)] = True
         self._data = None
 
     @property
@@ -45,17 +52,19 @@ class iRodsCollection(object):
                     cacl = copy.copy(acl)
                     if cacl.access_name == 'read object':
                         cacl.access_name = 'read'
-                    if cacl.user_name != self.session.username or \
-                       cacl.user_zone != self.session.zone:
+                    p = (cacl.user_name, cacl.user_zone)
+                    if p not in self.target_users:
                         acc = iRODSAccess('read',
                                           acl.path,
                                           acl.user_name,
                                           acl.user_zone)
                         self.session.permissions.set(acc, admin=True)
-                self.session.permissions.set(iRODSAccess('own',
-                                                         ooc.path,
-                                                         self.session.username,
-                                                         self.session.zone), admin=True)
+                for p in self.target_users.keys():
+                    self.session.permissions.set(iRODSAccess('own',
+                                                             ooc.path,
+                                                             p[0],
+                                                             p[1]),
+                                                 admin=True)
         return ret
 
     def unlock(self, data):
@@ -72,13 +81,14 @@ class iRodsCollection(object):
                         acc.access_name = 'read'
                     self.session.permissions.set(acc, admin=True)
                     old_access[(acc.user_name, acc.user_zone)] = acc
-                pair = (self.session.username, self.session.zone)
-                if pair not in old_access:
-                    acc = iRODSAccess('null',
-                                      str(ooc['path']),
-                                      self.session.username,
-                                      self.session.zone)
-                    self.session.permissions.set(acc, admin=True)
+                for pair in self.target_users.keys():
+                    # pair = (self.target_user, self.target_zone)
+                    if pair not in old_access:
+                        acc = iRODSAccess('null',
+                                          str(ooc['path']),
+                                          pair[0],
+                                          pair[1])
+                        self.session.permissions.set(acc, admin=True)
 
     def remove_ownership(self):
         coll = self.session.collections.get(self.collection_path)
@@ -86,11 +96,12 @@ class iRodsCollection(object):
             union = objects + [collection]
             for ooc in union:
                 for acl in self.session.permissions.get(ooc):
-                    acc = iRODSAccess('null',
-                                      ooc.path,
-                                      self.session.username,
-                                      self.session.zone)
-                    self.session.permissions.set(acc, admin=True)
+                    for pair in self.target_users.keys():
+                        acc = iRODSAccess('null',
+                                          ooc.path,
+                                          pair[0],
+                                          pair[1])
+                        self.session.permissions.set(acc, admin=True)
 
     def _update_data(self):
         lookup = {}

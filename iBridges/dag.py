@@ -90,6 +90,9 @@ class iBridgesDag(DAG):
             op = BranchPythonOperator
         return op(**_kwargs)
 
+    def dummy_operator(self, id, **kwargs):
+        return DummyOperator(task_id=id, dag=self, start_date=timezone.utcnow())
+
     def init_task(self):
         def init_fun(**kwargs):
             pass

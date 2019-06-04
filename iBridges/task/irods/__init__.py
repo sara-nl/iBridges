@@ -1,6 +1,8 @@
 import logging
+import os
 from irods.meta import iRODSMeta
 from irods.models import Collection
+from irods.models import DataObject
 import irods.keywords as kw
 from .collection import iRodsCollection
 from .utils import iRodsCollectionNotFlat
@@ -13,7 +15,8 @@ __all__ = ['test_connection',
            'check_flatness',
            'update_repository_info',
            'remove_ownership',
-           'copy_collection']
+           'copy_collection',
+           'clear_cache']
 
 
 def test_connection(ibcontext, **kwargs):
@@ -27,6 +30,16 @@ def test_connection(ibcontext, **kwargs):
         logger.debug(vars(sess.users.get(sess.username)))
 
 
+def clear_cache(ibcontext, **kwargs):
+    logger = logging.getLogger('ipublish')
+    cfg = ibcontext['irods'].get_config(kwargs)
+    logger.debug(cfg)
+    key = {'irods_zone': get_irods_zone(cfg),
+           'irods_collection': cfg['irods_collection']}
+    with ibcontext['irods'].session() as sess:
+        ibcontext['cache'].remove_if_exists(key)
+
+
 def lock_collection(ibcontext, **kwargs):
     """
     Transfer ownership of collection to current user.
@@ -35,7 +48,9 @@ def lock_collection(ibcontext, **kwargs):
     cfg = ibcontext['irods'].get_config(kwargs)
     logger.debug(cfg)
     with ibcontext['irods'].session() as sess:
-        collection = iRodsCollection(sess, cfg['irods_collection'])
+        collection = iRodsCollection(sess, cfg['irods_collection'],
+                                     target_user=cfg.get('target_user', None),
+                                     target_zone=cfg.get('target_zone', None))
         ibcontext['cache'].write(['irods_zone', 'irods_collection'],
                                  {'irods_data': collection.lock(),
                                   'irods_zone': get_irods_zone(cfg),
@@ -106,7 +121,7 @@ def copy_collection(ibcontext, **kwargs):
     target = cfg['irods_target']
     if target[-1] == '/':
         target = target[:-1]
-
+    target = os.path.join(target, os.path.basename(cfg['irods_collection']))
     logger.debug(cfg)
     with ibcontext['irods'].session() as sess:
         data = ibcontext['cache'].read(key)
@@ -116,7 +131,11 @@ def copy_collection(ibcontext, **kwargs):
                 p = item.get('path')[len(cfg['irods_collection']):]
                 target_path = target + p
                 logger.debug(target_path)
-                sess.collections.create(target_path, recurse=True)
+                # sess.collections.create(target_path, recurse=True)
+                # sess.metadata.copy(Collection,
+                #                   Collection,
+                #                   item.get('path'),
+                #                   target_path)
                 for obj in item.get('objects', []):
                     options = {kw.VERIFY_CHKSUM_KW: '',
                                kw.METADATA_INCLUDED_KW: ''}
@@ -126,6 +145,10 @@ def copy_collection(ibcontext, **kwargs):
                     sess.data_objects.copy(obj.get('path'),
                                            p,
                                            **options)
+                    # sess.metadata.copy(DataObject,
+                    #                   DataObject,
+                    #                   obj.get('path'),
+                    #                   p)
                     # todo test if succeeded
             else:
                 print(item.get('path'))
