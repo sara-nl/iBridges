@@ -81,8 +81,12 @@ class iRodsCollection(object):
                         acc.access_name = 'read'
                     self.session.permissions.set(acc, admin=True)
                     old_access[(acc.user_name, acc.user_zone)] = acc
-                for pair in self.target_users.keys():
-                    # pair = (self.target_user, self.target_zone)
+                if ooc['type'] == 'collection':
+                    iooc = self.session.collections.get(ooc['path'])
+                else:
+                    iooc = self.session.data_objects.get(ooc['path'])
+                for acl in self.session.permissions.get(iooc):
+                    pair = (acl.user_name, acl.user_zone)
                     if pair not in old_access:
                         acc = iRODSAccess('null',
                                           str(ooc['path']),
