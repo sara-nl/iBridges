@@ -131,7 +131,7 @@ def copy_collection(ibcontext, **kwargs):
                 p = item.get('path')[len(cfg['irods_collection']):]
                 target_path = target + p
                 logger.debug(target_path)
-                # sess.collections.create(target_path, recurse=True)
+                sess.collections.create(target_path, recurse=True)
                 # sess.metadata.copy(Collection,
                 #                   Collection,
                 #                   item.get('path'),
