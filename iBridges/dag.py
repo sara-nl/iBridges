@@ -1,11 +1,10 @@
 from datetime import timedelta
-import logging
-import traceback
 from airflow.models import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.python_operator import BranchPythonOperator
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.utils import timezone
+from airflow.models import BaseOperator
+from airflow.models import SkipMixin
+from airflow.utils.decorators import apply_defaults
+from airflow.utils import dates
 
 
 DAG_ARGUMENTS = {
@@ -14,12 +13,94 @@ DAG_ARGUMENTS = {
     'catchup': False,
     'default_args': {
         'owner': 'airflow',
+        'start_date': dates.days_ago(2),
         'retries': 0,
         'retry_delay': timedelta(minutes=5)}}
 
 
 class WorkflowFailedException(Exception):
     pass
+
+
+class InitTask(BaseOperator):
+    ui_color = '#A6E6A6'
+
+    @apply_defaults
+    def __init__(self, *args, **kwargs):
+        kwargs['op_kwargs'] = kwargs.get('op_kwargs', {})
+        _kwargs = {'task_id': 'init',
+                   'retries': 0}
+        _kwargs.update(kwargs)
+        super(InitTask, self).__init__(*args, **_kwargs)
+
+    def execute(self, context):
+        pass
+
+
+class FinalTask(BaseOperator):
+    ui_color = '#A6E6A6'
+
+    @apply_defaults
+    def __init__(self, *args, **kwargs):
+        kwargs['op_kwargs'] = kwargs.get('op_kwargs', {})
+        _kwargs = {'task_id': 'init',
+                   'retries': 0}
+        _kwargs.update(kwargs)
+        super(FinalTask, self).__init__(*args, **_kwargs)
+
+    def execute(self, context):
+        pass
+
+
+class ErrorTask(BaseOperator):
+    ui_color = '#FA8072'
+
+    @apply_defaults
+    def __init__(self, *args, **kwargs):
+        kwargs['op_kwargs'] = kwargs.get('op_kwargs', {})
+        _kwargs = {'task_id': 'failed',
+                   'retries': 0}
+        _kwargs.update(kwargs)
+        super(ErrorTask, self).__init__(*args, **_kwargs)
+
+    def execute(self, context):
+        raise WorkflowFailedException("failed")
+
+
+class Task(BaseOperator):
+
+    @apply_defaults
+    def __init__(self, *args, **kwargs):
+        dag = kwargs.get('dag', None)
+        if dag is None:
+            raise WorkflowFailedException("missing dag")
+        self.ibcontext = None if dag is None else dag.context
+        self.taskfn = kwargs.pop('fn')
+        self.op_kwargs = {}
+        _kwargs = {
+            'provide_context': True,
+            'task_id': "{0}.{1}".format(self.taskfn.__module__,
+                                        self.taskfn.__name__),
+            'op_args': [],
+            'op_kwargs': {},
+            'retries': 0
+        }
+        _kwargs['op_kwargs'].update(kwargs.get('op_kwargs', {}))
+        _kwargs.update(kwargs)
+        _kwargs['dag'] = self
+        _kwargs.update(kwargs)
+        self.default_args = {}
+        self.op_kwargs = _kwargs.get('op_kwargs', {})
+        super(Task, self).__init__(*args, **_kwargs)
+
+    def execute(self, context):
+        return self.taskfn(self.ibcontext, **context)
+
+
+class BranchTask(Task, SkipMixin):
+    def execute(self, context):
+        branch = super(BranchTask, self).execute(context)
+        self.skip_all_except(context['ti'], branch)
 
 
 class iBridgesDag(DAG):
@@ -31,97 +112,25 @@ class iBridgesDag(DAG):
         super(iBridgesDag, self).__init__(**_kwargs)
 
     def branch_task(self, taskfn, **kwargs):
-        def branch_func(**_kwargs):
-            logger = logging.getLogger('ipublish')
-            taskfn = _kwargs.pop('python_real_callable')
-            success = _kwargs.get('task_id') + '_success'
-            error = _kwargs.get('task_id') + '_error'
-            try:
-                taskfn(**_kwargs)
-                return success
-            except Exception:
-                logger.error(traceback.format_exc())
-                return error
+        kwargs['fn'] = taskfn
+        return BranchTask(dag=self, **kwargs)
 
-        _kwargs = {
-            'provide_context': True,
-            'task_id': taskfn.__name__,
-            'op_args': [],
-            'op_kwargs': {'ibcontext': self.context,
-                          'python_real_callable': taskfn},
-            'start_date': timezone.utcnow(),
-            'retries': 0
-        }
-        _kwargs.update(kwargs)
-        _kwargs['dag'] = self
-        _kwargs['python_callable'] = branch_func
-        _kwargs['op_kwargs']['task_id'] = _kwargs.get('task_id')
-        success = _kwargs.get('task_id') + '_success'
-        error = _kwargs.get('task_id') + '_error'
-        op = BranchPythonOperator(**_kwargs)
-        succ_op = DummyOperator(task_id=success, dag=self,
-                                start_date=_kwargs.get('start_date'))
-        error_op = DummyOperator(task_id=error, dag=self,
-                                 start_date=_kwargs.get('start_date'))
-        op >> succ_op
-        op >> error_op
-        return op, succ_op, error_op
-
-    def task(self, taskfn, branch=None, **kwargs):
-        _kwargs = {
-            'provide_context': True,
-            'task_id': "{0}.{1}".format(taskfn.__module__,
-                                        taskfn.__name__),
-            'op_args': [],
-            'op_kwargs': {'ibcontext': self.context},
-            'start_date': timezone.utcnow(),
-            'retries': 0
-        }
-        _kwargs.update(kwargs)
-        _kwargs['dag'] = self
-        _kwargs['python_callable'] = taskfn
-        _kwargs['op_kwargs']['task_id'] = _kwargs.get('task_id')
-        if branch is None:
-            op = PythonOperator
-        else:
-            if 'trigger_rule' not in _kwargs:
-                _kwargs['trigger_rule'] = 'all_success'
-            _kwargs['op_kwargs']['branch'] = branch
-            op = BranchPythonOperator
-        return op(**_kwargs)
+    def task(self, taskfn, **kwargs):
+        kwargs['fn'] = taskfn
+        return Task(dag=self, **kwargs)
 
     def dummy_operator(self, id, **kwargs):
-        return DummyOperator(task_id=id, dag=self, start_date=timezone.utcnow())
+        return DummyOperator(task_id=id, dag=self, **kwargs)
 
-    def init_task(self):
-        def init_fun(**kwargs):
-            pass
+    def init_task(self, **kwargs):
+        return InitTask(dag=self, **kwargs)
 
-        return PythonOperator(provide_context=True,
-                              task_id='init',
-                              op_kwargs={'ibcontext': self.context},
-                              start_date=timezone.utcnow(),
-                              retries=0,
-                              dag=self,
-                              python_callable=init_fun)
-
-    def final_task(self, success=True, task_id=None):
-        def final_fun(**kwargs):
-            if not kwargs.pop('success'):
-                raise WorkflowFailedException()
-
+    def final_task(self, task_id=None):
         if task_id is None:
-            task_id = 'final_ok' if success else 'final_failed'
-        if success:
-            trigger_rule = 'all_success'
-        else:
-            trigger_rule = 'one_failed'
-        return PythonOperator(provide_context=True,
-                              task_id=task_id,
-                              op_kwargs={'ibcontext': self.context,
-                                         'success': success},
-                              start_date=timezone.utcnow(),
-                              retries=0,
-                              dag=self,
-                              trigger_rule=trigger_rule,
-                              python_callable=final_fun)
+            task_id = 'final'
+        return FinalTask(dag=self, task_id=task_id)
+
+    def error_task(self, task_id=None):
+        if task_id is None:
+            task_id = 'final_failed'
+        return ErrorTask(dag=self, task_id=task_id)
