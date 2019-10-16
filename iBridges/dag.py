@@ -125,10 +125,10 @@ class iBridgesDag(DAG):
     def init_task(self, **kwargs):
         return InitTask(dag=self, **kwargs)
 
-    def final_task(self, task_id=None):
-        if task_id is None:
-            task_id = 'final'
-        return FinalTask(dag=self, task_id=task_id)
+    def final_task(self, **kwargs):
+        if kwargs.get('task_id', None) is None:
+            kwargs['task_id'] = 'final'
+        return FinalTask(dag=self, **kwargs)
 
     def error_task(self, task_id=None):
         if task_id is None:
