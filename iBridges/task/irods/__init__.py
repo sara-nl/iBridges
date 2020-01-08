@@ -132,8 +132,12 @@ def copy_collection(ibcontext, **kwargs):
                 target_path = target + p
                 logger.debug(target_path)
                 sess.collections.create(target_path, recurse=True)
+                target_coll = sess.collections.get(target_path)
+                for k, v in item.get('meta_data', {}).items():
+                    sess.metadata.add(Collection, target_path,
+                                      iRODSMeta(k, v))
                 # sess.metadata.copy(Collection,
-                #                   Collection,
+                #                    Collection,
                 #                   item.get('path'),
                 #                   target_path)
                 for obj in item.get('objects', []):
