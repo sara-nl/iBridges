@@ -1,8 +1,10 @@
 import logging
 import os
+import re
+import datetime
 from irods.meta import iRODSMeta
 from irods.models import Collection
-from irods.models import DataObject
+from irods.models import User, UserGroup
 import irods.keywords as kw
 from .collection import iRodsCollection
 from .utils import iRodsCollectionNotFlat
@@ -36,8 +38,7 @@ def clear_cache(ibcontext, **kwargs):
     logger.debug(cfg)
     key = {'irods_zone': get_irods_zone(cfg),
            'irods_collection': cfg['irods_collection']}
-    with ibcontext['irods'].session() as sess:
-        ibcontext['cache'].remove_if_exists(key)
+    ibcontext['cache'].remove_if_exists(key)
 
 
 def lock_collection(ibcontext, **kwargs):
@@ -113,46 +114,113 @@ def remove_ownership(ibcontext, **kwargs):
         collection.remove_ownership()
 
 
+def get_owner(data, path):
+    for obj in data:
+        if obj['path'] == path:
+            for acl in obj.get('acls').values():
+                if acl['access_name'] == 'own' and \
+                   acl['path'] == path:
+                    return acl['user_name']
+    return None
+
+
+def get_research_group(sess, user, group_tag):
+    result = sess.query(User, UserGroup.name).filter(User.name == user).all()
+    groups = [row[UserGroup.name] for row in result.rows]
+    for gr in groups:
+        for meta in sess.metadata.get(User, gr):
+            if meta.name == group_tag:
+                return gr
+    return None
+
+
+def get_metadata(data, path):
+    meta_data = None
+    for obj in data:
+        if obj['path'] == path:
+            meta_data = obj.get('meta_data')
+            break
+    if not meta_data:
+        raise RuntimeError("no meta_data for {0}".format(path))
+    return meta_data
+
+
+def determine_target_dir(sess, data, source, target, logger=None):
+    if target[-1] == '/':
+        target = target[:-1]
+    for g in re.findall('{BASENAME}', target):
+        target = target.replace(g, os.path.basename(source))
+    for g in re.findall('{USER}', target):
+        target = target.replace(g, get_owner(data, source))
+    for g in re.findall('{TIME}', target):
+        dtg = datetime.datetime.utcnow()
+        dtg = dtg.replace(tzinfo=datetime.timezone.utc,
+                          microsecond=0)
+        target = target.replace(g, dtg.isoformat())
+    for g in re.findall('(\\{GROUP:([^/}]+)\\})', target):
+        owner = get_owner(data, source)
+        if not owner:
+            msg = 'could not determine owner of irods collection {0}'
+            msg = msg.format(source)
+            raise RuntimeError(msg)
+        group = get_research_group(sess, owner, g[1])
+        if not group:
+            msg = 'user {0} not in a {1} group'
+            msg = msg.format(owner, g[1])
+            raise RuntimeError(msg)
+        target = target.replace(g[0], group)
+    for g in re.findall('({META:([^/}]+)})', target):
+        meta = get_metadata(data, source)
+        meta_value = meta.get(g[1], None)
+        if not meta_value:
+            msg = 'could not find meta data value for key {0}'
+            msg = msg.format(g[1])
+            raise RuntimeError(msg)
+        target = target.replace(g[0], g[1])
+    if logger:
+        logger.debug("target %s", target)
+    return target
+
+
 def copy_collection(ibcontext, **kwargs):
     logger = logging.getLogger('ipublish')
     cfg = ibcontext['irods'].get_config(kwargs)
     key = {'irods_zone': get_irods_zone(cfg),
            'irods_collection': cfg['irods_collection']}
-    target = cfg['irods_target']
-    if target[-1] == '/':
-        target = target[:-1]
-    target = os.path.join(target, os.path.basename(cfg['irods_collection']))
     logger.debug(cfg)
     with ibcontext['irods'].session() as sess:
         data = ibcontext['cache'].read(key)
         data = data.get('irods_data', [])
+        target = determine_target_dir(sess,
+                                      data,
+                                      cfg['irods_collection'],
+                                      cfg['irods_target'],
+                                      logger)
+
+        if not sess.collections.exists(target):
+            logger.debug("create %s", target)
+            sess.collections.create(target, recurse=True)
+        meta_data = get_metadata(data, cfg['irods_collection'])
+        for k, v in meta_data.items():
+            logger.debug("add meta %s %s %s", target, k, v)
+            sess.metadata.set(Collection, target,
+                              iRODSMeta(k, v))
         for item in data:
             if item.get('type') == 'collection':
-                p = item.get('path')[len(cfg['irods_collection']):]
-                target_path = target + p
-                logger.debug(target_path)
-                sess.collections.create(target_path, recurse=True)
-                target_coll = sess.collections.get(target_path)
-                for k, v in item.get('meta_data', {}).items():
-                    sess.metadata.add(Collection, target_path,
-                                      iRODSMeta(k, v))
-                # sess.metadata.copy(Collection,
-                #                    Collection,
-                #                   item.get('path'),
-                #                   target_path)
+                subpath = item.get('path')[len(cfg['irods_collection']):]
+                logger.debug("subpath {0}".format(subpath))
+                if subpath:
+                    target_coll = target + "/" + subpath
+                    if not sess.collections.exists(target_coll):
+                        sess.collections.create(target_coll, recurse=True)
+                else:
+                    target_coll = target
                 for obj in item.get('objects', []):
                     options = {kw.VERIFY_CHKSUM_KW: '',
                                kw.METADATA_INCLUDED_KW: ''}
-                    p = target + \
-                        obj.get('path')[len(cfg['irods_collection']):]
-                    logger.debug("%s -> %s", obj.get('path'), p)
+                    logger.debug("%s -> %s", obj.get('path'), target_coll)
                     sess.data_objects.copy(obj.get('path'),
-                                           p,
+                                           target_coll,
                                            **options)
-                    # sess.metadata.copy(DataObject,
-                    #                   DataObject,
-                    #                   obj.get('path'),
-                    #                   p)
-                    # todo test if succeeded
             else:
                 print(item.get('path'))
