@@ -176,7 +176,7 @@ def determine_target_dir(sess, data, source, target, logger=None):
             msg = 'could not find meta data value for key {0}'
             msg = msg.format(g[1])
             raise RuntimeError(msg)
-        target = target.replace(g[0], g[1])
+        target = target.replace(g[0], meta_value)
     if logger:
         logger.debug("target %s", target)
     return target
