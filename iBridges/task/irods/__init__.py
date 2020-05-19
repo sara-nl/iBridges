@@ -150,6 +150,13 @@ def determine_target_dir(sess, data, source, target, logger=None):
         target = target[:-1]
     for g in re.findall('{BASENAME}', target):
         target = target.replace(g, os.path.basename(source))
+    for g in re.findall('(\\{BASENAME:([^/}]+)\\})', target):
+        if source.startswith("/"):
+            lst = source.split("/")[1:]
+        else:
+            lst = source.split("/")
+        index = int(g[1])
+        target = target.replace(g[0], lst[index])
     for g in re.findall('{USER}', target):
         target = target.replace(g, get_owner(data, source))
     for g in re.findall('{TIME}', target):
