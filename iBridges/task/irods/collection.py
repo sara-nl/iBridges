@@ -48,7 +48,7 @@ class iRodsCollection(object):
         for collection, subcollections, objects in coll.walk(topdown=True):
             union = objects + [collection]
             for ooc in union:
-                for acl in self.session.permissions.get(ooc):
+                for acl in self.session.permissions.get(ooc, expand_groups=False):
                     cacl = copy.copy(acl)
                     if cacl.access_name == 'read object':
                         cacl.access_name = 'read'

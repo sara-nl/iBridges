@@ -1,4 +1,5 @@
 from .irods_session import iRODSSession
+from .irods_session.patched_access_manager import PatchedAccessManager
 from os.path import expanduser
 from .ibridges import iBridgesConnection
 
@@ -33,4 +34,7 @@ class iRodsConnection(iBridgesConnection):
                      "irods_env_file"]
         kwargs = {k: expanduser(f) if k in file_args else f
                   for k, f in self.config.items()}
-        return iRODSSession(**kwargs)
+        session = iRODSSession(**kwargs)
+        accmng = PatchedAccessManager(session)
+        session.permissions = accmng
+        return session
