@@ -26,9 +26,9 @@ class PatchedAccessManager(object):
         except NoResultFound:
             raise UserDoesNotExist()
 
-    def get(self, target, *args, expand_groups=False, **kwargs):
+    def get(self, target, *args, expand_groups=True, **kwargs):
         if expand_groups:
-            return self.orig_permissions.get(*args, **kwargs)
+            return self.orig_permissions.get(target, *args, **kwargs)
         else:
             if type(target) == iRODSDataObject:
                 access_type = DataAccess
