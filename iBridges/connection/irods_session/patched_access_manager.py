@@ -28,7 +28,9 @@ class PatchedAccessManager(object):
 
     def get(self, target, *args, expand_groups=True, **kwargs):
         if expand_groups:
-            return self.orig_permissions.get(target, *args, **kwargs)
+            for i in self.orig_permissions.get(target, *args, **kwargs):
+                yield i
+            raise StopIteration()
         else:
             if type(target) == iRODSDataObject:
                 access_type = DataAccess
@@ -49,10 +51,11 @@ class PatchedAccessManager(object):
                                   .all()
             for row in results:
                 user, zone = self._get_user_by_id(row[access_type.user_id])
-                yield iRODSAccess(access_name=row[access_type.name],
-                                  user_name=user,
-                                  path=target.path,
-                                  user_zone=zone)
+                access = iRODSAccess(access_name=row[access_type.name],
+                                     user_name=user,
+                                     path=target.path,
+                                     user_zone=zone)
+                yield access
             raise StopIteration()
 
     def set(self, *args, **kwargs):

@@ -45,10 +45,11 @@ class iRodsCollection(object):
         """
         ret = self.data
         coll = self.session.collections.get(self.collection_path)
+        perm = self.session.permissions
         for collection, subcollections, objects in coll.walk(topdown=True):
             union = objects + [collection]
             for ooc in union:
-                for acl in self.session.permissions.get(ooc, expand_groups=False):
+                for acl in perm.get(ooc, expand_groups=False):
                     cacl = copy.copy(acl)
                     if cacl.access_name == 'read object':
                         cacl.access_name = 'read'
@@ -58,13 +59,13 @@ class iRodsCollection(object):
                                           acl.path,
                                           acl.user_name,
                                           acl.user_zone)
-                        self.session.permissions.set(acc, admin=True)
+                        perm.set(acc, admin=True)
                 for p in self.target_users.keys():
-                    self.session.permissions.set(iRODSAccess('own',
-                                                             ooc.path,
-                                                             p[0],
-                                                             p[1]),
-                                                 admin=True)
+                    perm.set(iRODSAccess('own',
+                                         ooc.path,
+                                         p[0],
+                                         p[1]),
+                             admin=True)
         return ret
 
     def unlock(self, data):
@@ -85,7 +86,8 @@ class iRodsCollection(object):
                     iooc = self.session.collections.get(ooc['path'])
                 else:
                     iooc = self.session.data_objects.get(ooc['path'])
-                for acl in self.session.permissions.get(iooc):
+                for acl in self.session.permissions.get(iooc,
+                                                        expand_groups=False):
                     pair = (acl.user_name, acl.user_zone)
                     if pair not in old_access:
                         acc = iRODSAccess('null',
@@ -99,7 +101,8 @@ class iRodsCollection(object):
         for collection, subcollections, objects in coll.walk(topdown=True):
             union = objects + [collection]
             for ooc in union:
-                for acl in self.session.permissions.get(ooc):
+                for acl in self.session.permissions.get(ooc,
+                                                        expand_groups=False):
                     for pair in self.target_users.keys():
                         acc = iRODSAccess('null',
                                           ooc.path,
@@ -113,7 +116,8 @@ class iRodsCollection(object):
         coll = self.session.collections.get(self.collection_path)
         for collection, subcollections, objects in coll.walk(topdown=True):
             acls = {acl.user_name: vars(acl)
-                    for acl in self.session.permissions.get(collection)}
+                    for acl in self.session.permissions.get(collection,
+                                                            expand_groups=False)}
             p = collection.path
             parent_coll = self._get_parent_collection(p)
             lookup[p] = len(self._data)
@@ -137,10 +141,12 @@ class iRodsCollection(object):
                 for item in collobj.metadata.items()}
 
     def _get_object_acls(self, objects, parent):
+        perm = self.session.permissions
         return [{'type': 'object',
                  'path': obj.path,
                  'meta_data': self._get_meta_data(obj),
                  'parent': parent,
                  'acls': {acl.user_name: vars(acl)
-                          for acl in self.session.permissions.get(obj)}}
+                          for acl in perm.get(obj,
+                                              expand_groups=False)}}
                 for obj in objects]
