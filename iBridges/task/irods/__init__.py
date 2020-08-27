@@ -217,9 +217,15 @@ def copy_collection(ibcontext, **kwargs):
                 subpath = item.get('path')[len(cfg['irods_collection']):]
                 logger.debug("subpath {0}".format(subpath))
                 if subpath:
-                    target_coll = target + "/" + subpath
+                    if subpath[0] != '/':
+                        subpath = '/' + subpath
+                    target_coll = target + subpath
                     if not sess.collections.exists(target_coll):
+                        logger.debug("mkdir {0}".format(target_coll))
                         sess.collections.create(target_coll, recurse=True)
+                        if not sess.collections.exists(target_coll):
+                            msg = "cannot create collection {0}"
+                            raise RuntimeError(msg.format(target_coll))
                 else:
                     target_coll = target
                 for obj in item.get('objects', []):
